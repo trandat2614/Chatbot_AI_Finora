@@ -48,32 +48,74 @@ def vector_store_exists(db_dir: Optional[Path] = None) -> bool:
 def create_vector_store(
     documents: list[Document],
     db_dir: Optional[Path] = None,
+    batch_size: int = 25,
+    sleep_between_batches: float = 2.0,
 ) -> Chroma:
-    """Create and persist a ChromaDB vector store from documents.
+    """Create and persist a ChromaDB vector store from documents in batches.
 
     Args:
         documents: Chunked documents to embed and store.
         db_dir: Persist directory. Defaults to settings.VECTOR_DB_DIR.
+        batch_size: Number of documents to embed per API batch call.
+        sleep_between_batches: Pause in seconds between batches to avoid API rate limits.
 
     Returns:
         Chroma vector store instance.
     """
+    import time
+    import shutil
+
     path = db_dir or settings.get_vector_db_dir()
     path.mkdir(parents=True, exist_ok=True)
 
+    # Clean existing store files to prevent duplication or stale indexes
+    for child in path.glob("*"):
+        try:
+            if child.is_file():
+                child.unlink()
+            elif child.is_dir():
+                shutil.rmtree(child)
+        except Exception as err:
+            logger.warning("Could not clean old file %s: %s", child, err)
+
     embeddings = _get_embeddings()
     logger.info(
-        "Creating vector store in %s with %d documents.",
+        "Creating vector store in %s with %d documents (batch_size=%d).",
         path,
         len(documents),
+        batch_size,
     )
 
-    store = Chroma.from_documents(
-        documents=documents,
-        embedding=embeddings,
-        collection_name=settings.CHROMA_COLLECTION_NAME,
-        persist_directory=str(path),
-    )
+    store = None
+    total_batches = (len(documents) + batch_size - 1) // batch_size
+    for idx, i in enumerate(range(0, len(documents), batch_size), 1):
+        batch = documents[i : i + batch_size]
+        logger.info("Embedding batch %d/%d (%d docs)...", idx, total_batches, len(batch))
+        
+        max_retries = 5
+        for attempt in range(1, max_retries + 1):
+            try:
+                if store is None:
+                    store = Chroma.from_documents(
+                        documents=batch,
+                        embedding=embeddings,
+                        collection_name=settings.CHROMA_COLLECTION_NAME,
+                        persist_directory=str(path),
+                    )
+                else:
+                    store.add_documents(batch)
+                break
+            except Exception as exc:
+                if "429" in str(exc) or "RESOURCE_EXHAUSTED" in str(exc):
+                    wait_sec = 15 * attempt
+                    logger.warning("Rate limit hit (429). Retrying batch %d/%d in %ds (Attempt %d/%d)...", idx, total_batches, wait_sec, attempt, max_retries)
+                    time.sleep(wait_sec)
+                else:
+                    raise exc
+
+        if i + batch_size < len(documents):
+            time.sleep(sleep_between_batches)
+
     logger.info("Vector store created successfully.")
     return store
 

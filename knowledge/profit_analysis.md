@@ -1,72 +1,109 @@
-# Phan Tich Loi Nhuan (Profit Analysis)
+# Profitability Analysis & Cost Architecture in E-Commerce
 
-## Gross Profit (Loi Nhuan Gop)
+## 1. Profitability Architecture Overview
 
-**Cong thuc:**
+Managing a profitable multi-channel e-commerce enterprise requires a clear distinction between **Gross Profitability** (product sourcing efficiency) and **Net Profitability** (overall operational health).
+
 ```
-Gross Profit = Doanh Thu - Chi Phi Von Hang Ban (COGS)
-Gross Profit Margin = Gross Profit / Doanh Thu x 100
-```
-
-**Benchmark Gross Margin theo nganh (tham khao):**
-- Thoi trang/May mac: 50-70%
-- Dien tu tieu dung: 15-30%
-- My pham: 60-80%
-- Thuc pham chuc nang: 40-60%
-
-## Net Profit (Loi Nhuan Rong)
-
-**Cong thuc:**
-```
-Net Profit = Doanh Thu - COGS - Phi San - Chi Phi Marketing
-             - Chiet Khau - Hoan Hang - Chi Phi Van Hanh
-
-Net Profit Margin = Net Profit / Doanh Thu x 100
+[Gross Revenue] 
+  └─ (-) Discounts & Allowances
+[Net Sales Revenue] 
+  └─ (-) Cost of Goods Sold (COGS)
+[Gross Profit] 
+  └─ (-) Platform Fees (Commissions, Service & Payment Fees)
+  └─ (-) Performance Marketing & Ad Spend
+  └─ (-) Logistics, Packaging & Shipping Subsidies
+  └─ (-) Refunds & Return Losses
+  └─ (-) Fixed Operating Overhead (Rent, Salaries, Software)
+[Net Profit]
 ```
 
-**Benchmark Net Margin (tham khao):**
-- < 0%: Dang lo — can can thiep ngay
-- 0-5%: Mong, can theo doi chat
-- 5-15%: Muc binh thuong cho TMDT
-- > 15%: Tot
+---
 
-## So Sanh Gross Margin Va Net Margin
+## 2. Gross Profit & Gross Margin
 
-| Chi so | Gross Margin | Net Margin |
-|--------|-------------|------------|
-| Do luong | Hieu qua sourcing | Hieu qua tong the |
-| Bao gom | COGS | Tat ca chi phi |
-| Dung de | So sanh san pham | Danh gia suc khoe DN |
+### Formulas:
+$$ \text{Gross Profit} = \text{Net Revenue} - \text{Cost of Goods Sold (COGS)} $$
 
-## Cac Loai Chi Phi Cua Nguoi Ban Da Kenh
+$$ \text{Gross Profit Margin (\%)} = \frac{\text{Gross Profit}}{\text{Net Revenue}} \times 100\% $$
 
-### Chi Phi Von Hang Ban (COGS)
-- Gia nhap hang tu nha cung cap
-- Chi phi san xuat (neu tu san xuat)
+### COGS Components in E-Commerce:
+- Wholesale unit acquisition price or raw manufacturing costs.
+- Inbound freight, customs duties, and import tariffs.
+- Inbound warehouse receiving and inspection costs.
 
-### Phi San TMDT (Platform Fees)
-- Phi hoa hong theo danh muc: 1-20% tuy san/nganh
-- Phi van chuyen do san thu
-- Phi dich vu quang cao trong san
+### Industry Benchmark Gross Margins:
+- **Fashion & Apparel**: 50% - 70%
+- **Cosmetics & Skincare**: 60% - 80%
+- **Health Supplements**: 50% - 70%
+- **Consumer Electronics**: 15% - 30%
+- **Home & Living**: 40% - 60%
 
-**Tham khao phi san Viet Nam:**
-- Shopee: 0-5% + 2% phi dich vu
-- Lazada: 1-8%
-- TikTok Shop: 1-5%
+---
 
-### Chi Phi Marketing
-- Quang cao Facebook/TikTok/Google
-- Voucher, flashdeal, khuyen mai san
-- Chi phi content/KOL/affiliate
+## 3. Net Profit & Net Margin
 
-### Chi Phi Van Hanh
-- Luong nhan vien kho/CSKH
-- Thue kho bai
-- Phan mem quan ly
+### Formula:
+$$ \text{Net Profit} = \text{Gross Revenue} - \text{COGS} - \text{Platform Fees} - \text{Ad Spend} - \text{Discounts} - \text{Refund Losses} - \text{Logistics Costs} - \text{Fixed OpEx} $$
 
-## Phan Tich Margin Theo San Pham
+$$ \text{Net Profit Margin (\%)} = \frac{\text{Net Profit}}{\text{Gross Revenue}} \times 100\% $$
 
-1. **Tinh margin thuc te** sau khi tru phi san, phi ship, ty le hoan hang
-2. **Xep hang san pham** tu margin cao den thap
-3. **Uu tien marketing** cho san pham margin cao
-4. **Xem xet loai bo** san pham margin am
+### Net Profit Health Thresholds:
+- **< 0%**: **Net Financial Loss** — Urgent operational intervention required.
+- **0% - 5%**: **Fragile Margin** — High vulnerability to ad cost spikes or sales dips.
+- **5% - 15%**: **Standard Healthy Range** — Sustainable e-commerce performance.
+- **> 15%**: **High Performance** — Excellent financial health; strong operational efficiency.
+
+---
+
+## 4. Gross Margin vs. Net Margin Comparison Matrix
+
+| Analytical Dimension | Gross Profit Margin | Net Profit Margin |
+| :--- | :--- | :--- |
+| **Primary Focus** | Evaluates product sourcing and pricing power. | Evaluates total business operational profitability. |
+| **Costs Included** | COGS and direct inbound product expenses only. | All direct variable costs + fixed operating overhead. |
+| **Strategic Use** | SKU pricing, supplier negotiations, product selection. | Executive decision-making, expansion, cash flow planning. |
+
+---
+
+## 5. E-Commerce Cost Taxonomy Breakdown
+
+### 5.1 Platform Fees (Marketplace Costs)
+- **Commission Fees**: Category-based percentage charged by platforms (e.g., 2% - 10%).
+- **Transaction Processing Fees**: Payment gateway processing fee charged on gross order totals (typically 2% - 4%).
+- **Service & Program Fees**: Optional seller program fees (e.g., Shopee Freeship Xtra, Coin Cashback, Lazada Everyday Low Price).
+
+### 5.2 Marketing & Commercial Expenses
+- Paid advertising budgets (Facebook, TikTok, Shopee Sponsored Solutions).
+- Influencer seeding, affiliate commissions, and content creation fees.
+- Seller-absorbed vouchers, flash deal subsidies, and promotional discounts.
+
+### 5.3 Fulfillment & Logistics Expenses
+- Outbound packaging supplies (boxes, bubble wrap, poly mailers, thermal labels).
+- Outbound shipping subsidies and volumetric weight surcharges.
+- Loss from unrecoverable damaged returns or failed delivery attempts (COD returns).
+
+---
+
+## 6. SKU Rationalization & Portfolio Matrix
+
+To maximize net profitability, products must be classified into a 4-quadrant portfolio matrix based on sales volume and gross margin:
+
+```
+                  HIGH MARGIN
+                       │
+      [STAR SKUs]      │     [CASH COWS]
+  High Volume/High Margin│ Low Volume/High Margin
+───────────────────────┼───────────────────────
+   [TRAFFIC DRIVERS]   │   [PROFIT BLEEDERS]
+  High Volume/Low Margin│ Low Volume/Low Margin
+                       │
+                  LOW MARGIN
+  LOW VOLUME ───────────────────────── HIGH VOLUME
+```
+
+### Quad-Strategic Action Framework:
+1. **Star SKUs (High Volume, High Margin)**: Prioritize ad spend; protect inventory stock levels.
+2. **Cash Cows (Low Volume, High Margin)**: Cross-sell alongside Traffic Drivers to lift AOV.
+3. **Traffic Drivers (High Volume, Low Margin)**: Use as entry points to acquire customers; upsell to higher-margin items.
+4. **Profit Bleeders (Low Volume, Low Margin)**: Liquidate remaining inventory; discontinue SKU sourcing.

@@ -8,9 +8,14 @@ from config.settings import settings
 def render_sidebar() -> None:
     """Render the application sidebar with description and status."""
     with st.sidebar:
+        import os
+        logo_path = os.path.join("assets", "logo.png")
+        if os.path.exists(logo_path):
+            st.image(logo_path, use_container_width=True)
+
         st.markdown(
             """
-            # \U0001f4ca Finora AI
+            # 📊 Finora AI
             ### Business Advisor
             """
         )
