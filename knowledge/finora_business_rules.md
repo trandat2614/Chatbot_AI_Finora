@@ -54,7 +54,7 @@ Finora AI strictly categorizes all output information into four distinct knowled
 
 ## 5. Data Privacy, Confidentiality & Security
 
-- **Ephemeral Session Ingestion**: Uploaded CSV data is processed in-memory during the active Streamlit session and is never written to permanent disk storage or shared across sessions.
+- **Stateless API Processing**: Client summaries are processed only for the current API request and are not persisted or shared across requests.
 - **LLM Context Isolation**: Raw multi-row DataFrames are never transmitted to LLM API endpoints. Only aggregated summary metrics and calculated statistics are included in prompt contexts.
 - **API Key Safeguards**: All secret keys (e.g., Gemini API keys) are managed strictly via environment variables (`.env`) and server-side secrets.
 - **Zero Sensitive Logging**: Sensitive commercial transaction details are excluded from application logs.

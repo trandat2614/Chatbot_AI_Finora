@@ -12,6 +12,7 @@ Design principles:
 from __future__ import annotations
 
 import logging
+import json
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -53,6 +54,8 @@ class AdvisorService:
         question: str,
         business_context: str = "",
         signals: Optional[BusinessSignals] = None,
+        order_summary: Optional[dict] = None,
+        history: Optional[list[dict[str, str]]] = None,
     ) -> AdvisorResponse:
         """Generate an AI-powered business advisory response.
 
@@ -88,6 +91,14 @@ class AdvisorService:
             response.business_signals_count = len(signals.signals)
 
         # ---- Build LLM message -------------------------------------------
+        if order_summary is not None:
+            summary_text = json.dumps(order_summary, ensure_ascii=False, indent=2)
+            business_context = (
+                f"{business_context}\n\n## Dữ liệu tổng hợp đơn hàng do client cung cấp\n"
+                f"```json\n{summary_text}\n```\n"
+                "Chỉ được dùng đúng các số liệu trên; không tự suy diễn số còn thiếu."
+            )
+
         user_message = GENERAL_QA_PROMPT.format(
             user_question=question,
             business_context=business_context or "Chưa có dữ liệu kinh doanh được tải lên.",
@@ -97,11 +108,11 @@ class AdvisorService:
 
         # ---- LLM call ----------------------------------------------------
         try:
-            response.answer = self._llm.generate_response(user_message)
+            response.answer = self._llm.generate_response(user_message, history=history)
         except Exception as exc:
             logger.error("LLM call failed: %s", exc)
-            response.answer = f"⚠️ Không thể kết nối với AI. Lỗi: {exc}"
-            warnings.append(str(exc))
+            response.answer = "⚠️ Không thể kết nối với AI lúc này. Vui lòng thử lại sau."
+            warnings.append("Dịch vụ Gemini tạm thời không khả dụng.")
 
         response.warnings = warnings
         return response

@@ -2,7 +2,7 @@
 Forecast service — orchestrates revenue forecasting.
 
 Wraps the forecasting module with error handling and
-result formatting for Streamlit UI consumption.
+result formatting for API or other client consumption.
 """
 from __future__ import annotations
 

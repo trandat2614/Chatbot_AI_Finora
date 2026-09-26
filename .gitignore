@@ -43,6 +43,9 @@ htmlcov/
 *.log
 logs/
 
+# Generated local vector database (recreate with: python ingest.py)
+vector_db/
+
 # Jupyter Notebooks (not the main app)
 *.ipynb
 

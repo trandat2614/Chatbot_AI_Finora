@@ -88,6 +88,7 @@ def get_source_citations(chunks: list[RetrievedChunk]) -> list[dict]:
         if chunk.filename not in seen:
             seen.add(chunk.filename)
             citations.append({
+                "source": chunk.filename,
                 "filename": chunk.filename,
                 "file_type": chunk.file_type,
                 "score": chunk.relevance_score,

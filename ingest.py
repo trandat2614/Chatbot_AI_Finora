@@ -7,8 +7,7 @@ creates embeddings via Google Gemini, and persists to ChromaDB.
 Run with:
     python ingest.py
 
-This script must be run BEFORE starting the Streamlit application.
-It does NOT run automatically on Streamlit reruns.
+Run this script before starting the API server and whenever knowledge changes.
 """
 import sys
 import logging
@@ -45,7 +44,7 @@ def main() -> None:
 
     print(f"\n📂 Thư mục kiến thức : {knowledge_dir}")
     print(f"🗄️  Vector database   : {vector_db_dir}")
-    print(f"🤖 Embedding model    : {settings.EMBEDDING_MODEL}")
+    print(f"🤖 Embedding model    : {settings.active_embedding_model()}")
     print(f"📏 Chunk size         : {settings.CHUNK_SIZE} | Overlap: {settings.CHUNK_OVERLAP}")
 
     if not knowledge_dir.is_dir():
@@ -115,7 +114,7 @@ def main() -> None:
     print(f"  • Số chunks đã tạo   : {len(chunks)}")
     print(f"  • Vector DB đường dẫn: {vector_db_dir}")
     print("\n  Bạn có thể chạy ứng dụng bằng:")
-    print("    streamlit run app.py")
+    print("    uvicorn server:app --host 0.0.0.0 --port 8000")
     print("=" * 60)
 
 

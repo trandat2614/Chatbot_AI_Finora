@@ -1,16 +1,24 @@
-streamlit>=1.35.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+python-multipart>=0.0.20
 openai>=1.30.0
 langchain>=0.2.0
 langchain-openai>=0.1.8
-langchain-google-genai>=1.0.3
+# 4.x uses the current google-genai SDK. Older releases use the legacy
+# BatchEmbedContents client, which cannot authenticate with Gemini auth keys.
+langchain-google-genai>=4.4.0
+google-genai>=1.63.0
 langchain-chroma>=0.1.2
 langchain-community>=0.2.0
 langchain-text-splitters>=0.2.0
 chromadb>=0.5.0
 pandas>=2.1.0
+openpyxl>=3.1.0
+xlrd>=2.0.1
 numpy>=1.26.0
 scikit-learn>=1.4.0
 pypdf>=4.2.0
 python-dotenv>=1.0.0
 pytest>=8.0.0
 pytest-mock>=3.12.0
+httpx>=0.27.0
