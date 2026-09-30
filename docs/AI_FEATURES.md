@@ -89,9 +89,11 @@ Intent: `BUSINESS_OVERVIEW`, `BUSINESS_HEALTH`, `REVENUE_LEAKAGE`,
 
 Mọi intent phụ thuộc dữ liệu shop phải có `verified_metrics` và provenance từ
 tool. Nếu thiếu, orchestration trả `INSUFFICIENT_DATA` trước khi gọi LLM.
-Assistant history và legacy `orderSummary` không được dùng làm metric source.
-Nếu output LLM chứa số không có trong verified tool result, output đó bị loại
-và thay bằng deterministic grounded summary.
+Assistant history không được dùng làm metric source. Legacy `/api/chat` có bridge
+tạm thời cho `orderSummary`: chỉ KPI số thuộc whitelist được đưa vào context và
+được gắn provenance `snapshot`; database vẫn được ưu tiên. Nếu output LLM chứa
+số không có trong verified tool result hoặc snapshot đã lọc, output đó bị loại và
+thay bằng deterministic grounded summary. `/api/v1/chat` không nhận snapshot này.
 
 ## RAG
 

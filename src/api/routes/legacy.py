@@ -63,6 +63,9 @@ def chat(
         question=payload.message,
         order_summary=payload.orderSummary,
         history=[item.model_dump() for item in payload.history],
+        # Compatibility bridge for the existing Finora Web. The advisor only
+        # accepts allowlisted numeric metrics and post-validates LLM numbers.
+        allow_legacy_summary=True,
     )
     audit_event("ai_analysis", context, resource="chat", details={"intent": result.intent, "status": result.analysis_status})
     return ChatResponse(

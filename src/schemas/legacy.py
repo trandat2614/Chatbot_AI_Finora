@@ -24,7 +24,7 @@ class ChatRequest(LegacyModel):
 
 class Source(LegacyModel):
     source: str
-    type: Literal["rag", "database", "market"] = "rag"
+    type: Literal["rag", "database", "market", "snapshot"] = "rag"
     name: str | None = None
     period: dict[str, Any] | None = None
     filename: str | None = None

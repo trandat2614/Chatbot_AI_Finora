@@ -254,5 +254,8 @@ transport. Không trả stack trace hay upstream secret về browser.
 
 Các endpoint `/api/*` cũ đang được giữ dưới dạng deprecated wrappers. `X-API-Key` chỉ dùng cho local/test hoặc migration có kiểm soát khi `ENABLE_LEGACY_API_KEY=true`; production phải dùng `/api/v1`, JWT + service key và đặt `ENABLE_LEGACY_API_KEY=false`.
 
-Legacy `orderSummary` là `UNTRUSTED LEGACY INPUT` và bị bỏ qua đối với KPI
-authoritative; nó không thể bypass PostgreSQL/tool grounding.
+Legacy `/api/chat` tạm hỗ trợ `orderSummary` từ Web hiện tại để tránh gián đoạn
+trong thời gian migration. Bridge này chỉ nhận các KPI số thuộc whitelist, bỏ mọi
+text/field lạ và chặn output LLM có số không xuất hiện trong snapshot. PostgreSQL
+vẫn luôn được ưu tiên khi có dữ liệu. `/api/v1/chat` không nhận `orderSummary`;
+Web cần chuyển sang import/sync dữ liệu authoritative và contract v1.

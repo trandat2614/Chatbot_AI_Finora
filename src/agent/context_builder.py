@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 from decimal import Decimal, InvalidOperation
 from typing import Any
@@ -10,6 +11,106 @@ from src.agent.intent_router import Intent
 from src.security.privacy import sanitize_for_ai
 
 _NUMBER_RE = re.compile(r"(?<![\w])[-+]?\d(?:[\d.,]*\d)?(?:\s*%)?")
+
+# Legacy Web currently sends a compact orderSummary instead of synchronising raw
+# orders into the AI database. Only known aggregate fields are accepted so an
+# arbitrary object cannot become prompt context.
+_SUMMARY_METRIC_ALIASES = {
+    "revenue": "revenue",
+    "totalrevenue": "revenue",
+    "doanhthu": "revenue",
+    "gmv": "gmv",
+    "netrevenue": "net_revenue",
+    "totalorders": "order_count",
+    "ordercount": "order_count",
+    "orders": "order_count",
+    "unitssold": "units_sold",
+    "totalunits": "units_sold",
+    "aov": "aov",
+    "averageordervalue": "aov",
+    "refundrate": "refund_rate",
+    "cancellationrate": "cancellation_rate",
+    "cancelrate": "cancellation_rate",
+    "sellerdiscount": "seller_discount",
+    "marketplacefee": "marketplace_fee",
+    "platformfee": "marketplace_fee",
+    "transactionfee": "transaction_fee",
+    "servicefee": "service_fee",
+    "shippingfee": "shipping_fee",
+    "salesgrowth": "sales_growth",
+    "revenuegrowth": "sales_growth",
+    "growthrate": "sales_growth",
+    "salesvelocity": "sales_velocity",
+    "refundamount": "refund_amount",
+    "totalprofit": "profit",
+    "netprofit": "profit",
+    "profit": "profit",
+    "profitmargin": "profit_margin",
+    "conversionrate": "conversion_rate",
+}
+
+
+def _summary_key(value: object) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(value).lower())
+
+
+def _summary_number(value: object) -> int | float | None:
+    if isinstance(value, bool):
+        return None
+    if isinstance(value, int):
+        return value if abs(value) <= 10**18 else None
+    if isinstance(value, float):
+        return value if math.isfinite(value) and abs(value) <= 10**18 else None
+    if isinstance(value, str) and re.fullmatch(r"[-+]?\d+(?:\.\d+)?", value.strip()):
+        parsed = float(value)
+        return parsed if math.isfinite(parsed) and abs(parsed) <= 10**18 else None
+    return None
+
+
+def build_legacy_summary_result(summary: dict[str, Any]) -> dict[str, Any] | None:
+    """Convert an authenticated legacy Web snapshot into guarded metrics.
+
+    This compatibility bridge does not accept instructions, labels, free text or
+    unknown fields. The resulting numbers are still post-validated after LLM
+    generation, so the model cannot introduce a metric absent from the snapshot.
+    """
+    metrics: dict[str, int | float] = {}
+
+    def collect(value: object, depth: int = 0) -> None:
+        if depth > 4 or not isinstance(value, dict):
+            return
+        for raw_name, raw_value in value.items():
+            canonical = _SUMMARY_METRIC_ALIASES.get(_summary_key(raw_name))
+            number = _summary_number(raw_value)
+            if canonical and number is not None:
+                metrics[canonical] = number
+            elif isinstance(raw_value, dict):
+                collect(raw_value, depth + 1)
+
+    collect(summary)
+    if not metrics:
+        return None
+
+    source = {
+        "type": "snapshot",
+        "service": "web_backend_order_summary",
+        "period": {"selection": "legacy_snapshot", "from": None, "to": None},
+    }
+    return {
+        "status": "OK",
+        "metrics": metrics,
+        "has_verified_metrics": True,
+        "verified_metrics": [
+            {
+                "name": name,
+                "value": value,
+                "status": "AVAILABLE",
+                "source": source,
+            }
+            for name, value in metrics.items()
+        ],
+        "provenance": source,
+    }
 
 
 def has_verified_metrics(result: dict[str, Any]) -> bool:
@@ -35,10 +136,17 @@ def build_verified_context(result: dict[str, Any]) -> str:
     if not has_verified_metrics(result):
         return "VERIFIED SHOP METRICS:\nNONE"
     safe_result = sanitize_for_ai(result, block_prompt_injection=True)
+    source_type = str(result.get("provenance", {}).get("type", ""))
+    heading = (
+        "AUTHENTICATED WEB METRIC SNAPSHOT (legacy compatibility data)"
+        if source_type == "snapshot"
+        else "VERIFIED SHOP METRICS (authoritative structured data)"
+    )
     return (
-        "VERIFIED SHOP METRICS (authoritative structured data)\n"
+        heading + "\n"
         + json.dumps(safe_result, ensure_ascii=False, indent=2)
-        + "\nOnly values in verified_metrics may be stated as shop facts."
+        + "\nOnly values in verified_metrics may be stated as shop facts; "
+        "never infer a missing value."
     )
 
 
