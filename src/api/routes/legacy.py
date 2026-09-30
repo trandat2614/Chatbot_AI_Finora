@@ -72,6 +72,8 @@ def chat(
         warnings=result.warnings,
         analysis_status=result.analysis_status,
         intent=result.intent,
+        data_grounded=result.data_grounded,
+        tool_context_used=result.tool_context_used,
     )
 
 

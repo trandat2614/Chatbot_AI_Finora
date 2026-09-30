@@ -69,8 +69,11 @@ ChatRequest -> AuthContext -> Intent Router -> authorized tool
 Tools được bind vào context, không nhận arbitrary tenant/shop từ model:
 
 ```text
+get_business_overview
 get_business_health
 analyze_product
+analyze_orders
+analyze_refunds
 analyze_revenue_leakage
 get_market_trends
 find_product_opportunities
@@ -79,7 +82,16 @@ generate_sales_plan
 generate_communication_plan
 ```
 
-Intent: `BUSINESS_HEALTH`, `PRODUCT_ANALYSIS`, `FINANCIAL_ANALYSIS`, `MARKET_TREND`, `PRODUCT_OPPORTUNITY`, `ACTION_PLAN`, `SALES_PLAN`, `MARKETING_PLAN`, `POLICY_QUESTION`, `GENERAL_CHAT`.
+Intent: `BUSINESS_OVERVIEW`, `BUSINESS_HEALTH`, `REVENUE_LEAKAGE`,
+`PRODUCT_ANALYSIS`, `ORDER_ANALYSIS`, `REFUND_ANALYSIS`, `MARKET_TRENDS`,
+`OPPORTUNITIES`, `ACTION_PLAN`, `SALES_PLAN`, `MARKETING_PLAN`,
+`POLICY_QUESTION`, `GENERAL_CHAT`.
+
+Mọi intent phụ thuộc dữ liệu shop phải có `verified_metrics` và provenance từ
+tool. Nếu thiếu, orchestration trả `INSUFFICIENT_DATA` trước khi gọi LLM.
+Assistant history và legacy `orderSummary` không được dùng làm metric source.
+Nếu output LLM chứa số không có trong verified tool result, output đó bị loại
+và thay bằng deterministic grounded summary.
 
 ## RAG
 

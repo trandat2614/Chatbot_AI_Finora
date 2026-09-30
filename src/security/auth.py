@@ -48,6 +48,10 @@ class AuthContext:
     def audit_user(self) -> str:
         return hashlib.sha256(self.user_id.encode("utf-8")).hexdigest()[:16]
 
+    @property
+    def audit_shop(self) -> str:
+        return hashlib.sha256(self.shop_id.encode("utf-8")).hexdigest()[:16]
+
 
 @dataclass(frozen=True)
 class AuthPrincipal:
@@ -74,6 +78,10 @@ class AuthPrincipal:
     @property
     def audit_user(self) -> str:
         return hashlib.sha256(self.user_id.encode("utf-8")).hexdigest()[:16]
+
+    @property
+    def audit_shop(self) -> str:
+        return hashlib.sha256(self.shop_id.encode("utf-8")).hexdigest()[:16]
 
     def to_context(self, requested_shop_id: str | None = None) -> AuthContext:
         selected = requested_shop_id or (self.shop_ids[0] if self.shop_ids else "default")

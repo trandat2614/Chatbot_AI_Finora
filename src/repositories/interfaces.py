@@ -13,13 +13,18 @@ class OrderRepository(Protocol):
 
     def replace_orders(
         self, context: AuthContext, frame: pd.DataFrame, import_id: str | None = None
-    ) -> int: ...
+    ) -> object: ...
 
 
 class ImportRepository(Protocol):
     def create_import(
-        self, context: AuthContext, filename: str, filename_hash: str, total_rows: int
-    ) -> str: ...
+        self,
+        context: AuthContext,
+        filename: str,
+        filename_hash: str,
+        fingerprint: str,
+        total_rows: int,
+    ) -> tuple[str, bool]: ...
 
     def complete_import(
         self,
@@ -29,6 +34,8 @@ class ImportRepository(Protocol):
         platform: str,
         accepted_rows: int,
         rejected_rows: int,
+        orders_created: int,
+        order_items_created: int,
         warnings: list[str],
     ) -> None: ...
 

@@ -43,6 +43,9 @@ class DataImport(Base):
     __tablename__ = "data_imports"
     __table_args__ = (
         Index("ix_import_owner_created", "tenant_id", "shop_id", "created_at"),
+        UniqueConstraint(
+            "tenant_id", "shop_id", "fingerprint", name="uq_import_owner_fingerprint"
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)
@@ -52,10 +55,13 @@ class DataImport(Base):
     platform: Mapped[str | None] = mapped_column(String(50))
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
     filename_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    fingerprint: Mapped[str | None] = mapped_column(String(64))
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="PENDING")
     total_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     accepted_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     rejected_rows: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    orders_created: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    order_items_created: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     warnings: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
     error_code: Mapped[str | None] = mapped_column(String(100))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)

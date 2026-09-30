@@ -24,6 +24,9 @@ class ChatRequest(LegacyModel):
 
 class Source(LegacyModel):
     source: str
+    type: Literal["rag", "database", "market"] = "rag"
+    name: str | None = None
+    period: dict[str, Any] | None = None
     filename: str | None = None
     file_type: str | None = None
     score: float | None = None
@@ -36,6 +39,8 @@ class ChatResponse(LegacyModel):
     warnings: list[str] = Field(default_factory=list)
     analysis_status: Literal["OK", "INSUFFICIENT_DATA"] = "OK"
     intent: str = "GENERAL_CHAT"
+    data_grounded: bool = False
+    tool_context_used: bool = False
 
 
 class UploadResponse(LegacyModel):

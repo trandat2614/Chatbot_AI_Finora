@@ -65,9 +65,47 @@ def neutralize_spreadsheet_formula(value: object) -> object:
 
 def validate_csv_shape(contents: bytes, *, max_rows: int = 200_000, max_columns: int = 200) -> None:
     text = contents.decode("utf-8-sig")
+    if "\x00" in text:
+        raise UnsafeUploadError("CSV chứa byte NUL không hợp lệ.")
     reader = csv.reader(io.StringIO(text))
     for index, row in enumerate(reader):
         if index > max_rows:
             raise UnsafeUploadError("CSV có quá nhiều dòng.")
         if len(row) > max_columns:
             raise UnsafeUploadError("CSV có quá nhiều cột.")
+
+
+def validate_xlsx_shape(
+    contents: bytes,
+    *,
+    max_rows: int = 200_000,
+    max_columns: int = 200,
+    max_sheets: int = 20,
+) -> None:
+    """Bound workbook shape before pandas materializes every worksheet."""
+    try:
+        from openpyxl import load_workbook
+        from openpyxl.utils.exceptions import InvalidFileException
+
+        workbook = load_workbook(
+            io.BytesIO(contents),
+            read_only=True,
+            data_only=True,
+            keep_links=False,
+        )
+        try:
+            if len(workbook.worksheets) > max_sheets:
+                raise UnsafeUploadError("XLSX có quá nhiều sheet.")
+            total_rows = 0
+            for worksheet in workbook.worksheets:
+                if worksheet.max_column > max_columns:
+                    raise UnsafeUploadError("XLSX có quá nhiều cột.")
+                total_rows += worksheet.max_row
+                if total_rows > max_rows:
+                    raise UnsafeUploadError("XLSX có quá nhiều dòng.")
+        finally:
+            workbook.close()
+    except UnsafeUploadError:
+        raise
+    except (InvalidFileException, KeyError, OSError, ValueError, zipfile.BadZipFile) as exc:
+        raise UnsafeUploadError("Workbook XLSX bị hỏng hoặc không hợp lệ.") from exc

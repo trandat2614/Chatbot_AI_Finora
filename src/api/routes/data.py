@@ -15,7 +15,12 @@ from src.schemas.api import DataImportResponse, ErrorResponse, ImportData, Impor
 from src.security.audit import audit_event
 from src.security.auth import AuthContext
 from src.security.privacy import sanitize_text
-from src.security.uploads import UnsafeUploadError, validate_csv_shape, validate_upload
+from src.security.uploads import (
+    UnsafeUploadError,
+    validate_csv_shape,
+    validate_upload,
+    validate_xlsx_shape,
+)
 from src.services.normalization.service import DataNormalizationService
 from src.services.raw_upload_service import RawUploadService
 
@@ -41,6 +46,7 @@ async def import_data(
     contents = await file.read(settings.MAX_UPLOAD_BYTES + 1)
     await file.close()
     import_id: str | None = None
+    duplicate = False
     try:
         filename = validate_upload(
             file.filename or "", file.content_type, contents, settings.MAX_UPLOAD_BYTES
@@ -50,25 +56,56 @@ async def import_data(
             raise UnsafeUploadError("Import đơn hàng chỉ hỗ trợ CSV/XLSX.")
         if suffix == ".csv":
             validate_csv_shape(contents)
+        else:
+            validate_xlsx_shape(contents)
         normalizer = DataNormalizationService()
         with RawUploadService().temporary_copy(suffix, contents):
             source = normalizer.read_upload(filename, contents)
             safe_filename = sanitize_text(filename)
-            import_id = repository.create_import(
+            platform = normalizer.detect_platform(source)
+            file_hash = hashlib.sha256(contents).hexdigest()
+            fingerprint = hashlib.sha256(
+                (
+                    f"{context.tenant_id}\x00{context.shop_id}\x00"
+                    f"{file_hash}\x00{platform}"
+                ).encode("utf-8")
+            ).hexdigest()
+            import_id, created = repository.create_import(
                 context,
                 safe_filename,
-                hashlib.sha256(filename.encode()).hexdigest(),
+                file_hash,
+                fingerprint,
                 len(source),
             )
+            if not created:
+                duplicate = True
+                record = repository.get_import(context, import_id)
+                assert record is not None
+                audit_event(
+                    "data_import",
+                    context,
+                    resource="orders",
+                    details={
+                        "filename_hash": file_hash[:16],
+                        "record_count": record["accepted_rows"],
+                        "status": record["status"],
+                    },
+                )
+                return DataImportResponse(
+                    data=ImportData(**record, duplicate=True),
+                    meta=meta(request),
+                )
             repository.mark_processing(context, import_id)
-            result = normalizer.normalize(source)
-            accepted = repository.replace_orders(context, result.frame, import_id)
+            result = normalizer.normalize(source, platform)
+            written = repository.replace_orders(context, result.frame, import_id)
             repository.complete_import(
                 context,
                 import_id,
                 platform=result.platform,
-                accepted_rows=accepted,
+                accepted_rows=written.order_items_created,
                 rejected_rows=result.rejected_rows,
+                orders_created=written.orders_created,
+                order_items_created=written.order_items_created,
                 warnings=result.warnings,
             )
     except UnsafeUploadError as exc:
@@ -95,7 +132,10 @@ async def import_data(
         resource="orders",
         details={"record_count": record["accepted_rows"], "status": record["status"]},
     )
-    return DataImportResponse(data=ImportData(**record), meta=meta(request))
+    return DataImportResponse(
+        data=ImportData(**record, duplicate=duplicate),
+        meta=meta(request),
+    )
 
 
 @router.get("/imports/{import_id}", response_model=ImportStatusResponse)

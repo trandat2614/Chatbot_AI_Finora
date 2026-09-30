@@ -165,6 +165,12 @@ export async function importMarketplaceFile(identity, fileBlob, filename) {
 
 `shop_id` không nằm trong query/body; nó được lấy từ JWT đã xác minh. Node nên giới hạn kích thước bằng hoặc nhỏ hơn `MAX_UPLOAD_BYTES`. Không log file, nội dung file hoặc dữ liệu khách hàng. Sau khi xử lý, AI Server xóa raw file tạm theo retention policy và chỉ giữ normalized records.
 
+AI Server tạo fingerprint từ `tenant_id + shop_id + SHA256(file) + platform`.
+Gửi lại đúng cùng file cho cùng shop trả lại import job đã có với
+`duplicate=true`; không tạo thêm order/order item. Response import có cả
+`orders_created` và `order_items_created` để UI không nhầm một dòng item là
+một order.
+
 ## Chat
 
 ```js
@@ -192,6 +198,30 @@ export function chatWithAi(identity, message, filters = {}) {
 
 `history` và filters là tùy chọn. Không gửi `orderSummary`; AI Server tự truy vấn dữ liệu đã authorize từ repository.
 
+Với câu hỏi KPI của shop, AI Server luôn chạy deterministic tool trước LLM.
+Shop chưa có dữ liệu trả:
+
+```json
+{
+  "success": true,
+  "data": {
+    "answer": "Hiện Finora chưa có đủ dữ liệu bán hàng đã xác thực của shop...",
+    "sources": [],
+    "rag_context_used": false,
+    "warnings": [],
+    "analysis_status": "INSUFFICIENT_DATA",
+    "intent": "BUSINESS_OVERVIEW",
+    "data_grounded": false,
+    "tool_context_used": true
+  },
+  "meta": { "request_id": "req_..." }
+}
+```
+
+Khi có dữ liệu, `data_grounded=true` và `sources` chứa provenance công khai,
+ví dụ `{"type":"database","name":"business_metrics"}`. History chỉ dùng cho
+ngữ cảnh hội thoại; số liệu trong user/assistant history không phải nguồn KPI.
+
 ## Planning
 
 `POST /api/v1/sales-plan` và `/api/v1/communication-plan` nhận:
@@ -214,11 +244,15 @@ export function chatWithAi(identity, message, filters = {}) {
 - `401`: token/service key sai, hết hạn, issuer hoặc audience sai; không retry mù.
 - `403`: role/shop không được phép; không retry.
 - `413/415/422`: file hoặc schema không hợp lệ.
-- `429`: retry có exponential backoff cho request idempotent.
+- `429`: retry có exponential backoff.
 - `503`: LLM chưa cấu hình hoặc upstream không khả dụng.
 
-Không retry import tự động nếu chưa có idempotency key. Không trả stack trace hay upstream secret về browser.
+Import cùng file đã có fingerprint idempotent nên có thể retry an toàn sau lỗi
+transport. Không trả stack trace hay upstream secret về browser.
 
 ## Compatibility
 
 Các endpoint `/api/*` cũ đang được giữ dưới dạng deprecated wrappers. `X-API-Key` chỉ dùng cho local/test hoặc migration có kiểm soát khi `ENABLE_LEGACY_API_KEY=true`; production phải dùng `/api/v1`, JWT + service key và đặt `ENABLE_LEGACY_API_KEY=false`.
+
+Legacy `orderSummary` là `UNTRUSTED LEGACY INPUT` và bị bỏ qua đối với KPI
+authoritative; nó không thể bypass PostgreSQL/tool grounding.

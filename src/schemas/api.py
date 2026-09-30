@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -41,6 +41,9 @@ class ImportData(APIModel):
     total_rows: int = 0
     accepted_rows: int = 0
     rejected_rows: int = 0
+    orders_created: int = 0
+    order_items_created: int = 0
+    duplicate: bool = False
     warnings: list[str] = Field(default_factory=list)
     created_at: datetime | None = None
     completed_at: datetime | None = None
@@ -267,6 +270,9 @@ class ChatRequest(APIModel):
 
 class Source(APIModel):
     source: str
+    type: Literal["rag", "database", "market"] = "rag"
+    name: str | None = None
+    period: dict[str, Any] | None = None
     filename: str | None = None
     file_type: str | None = None
     score: float | None = None
@@ -279,6 +285,8 @@ class ChatData(APIModel):
     warnings: list[str] = Field(default_factory=list)
     analysis_status: AnalysisStatus
     intent: str
+    data_grounded: bool = False
+    tool_context_used: bool = False
 
 
 class ChatResponse(APIModel):

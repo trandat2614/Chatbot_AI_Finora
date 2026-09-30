@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
 import pandas as pd
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from src.db.models import DataImport, Order, OrderItem, Product, Shop
@@ -16,6 +18,12 @@ from src.security.auth import AuthContext
 
 def _uuid() -> str:
     return str(uuid.uuid4())
+
+
+@dataclass(frozen=True)
+class ImportWriteResult:
+    orders_created: int
+    order_items_created: int
 
 
 def _number(value: Any) -> float:
@@ -62,24 +70,68 @@ class SQLAlchemyCommerceRepository:
             shop.platform = platform
 
     def create_import(
-        self, context: AuthContext, filename: str, filename_hash: str, total_rows: int
-    ) -> str:
+        self,
+        context: AuthContext,
+        filename: str,
+        filename_hash: str,
+        fingerprint: str,
+        total_rows: int,
+    ) -> tuple[str, bool]:
         import_id = _uuid()
-        with self.database.session() as session:
-            self._ensure_shop(session, context)
-            session.add(
-                DataImport(
-                    id=import_id,
-                    tenant_id=context.tenant_id,
-                    shop_id=context.shop_id,
-                    user_id=context.user_id,
-                    filename=filename,
-                    filename_hash=filename_hash,
-                    status="PENDING",
-                    total_rows=max(total_rows, 0),
+        try:
+            with self.database.session() as session:
+                existing = session.scalar(
+                    select(DataImport).where(
+                        DataImport.tenant_id == context.tenant_id,
+                        DataImport.shop_id == context.shop_id,
+                        DataImport.fingerprint == fingerprint,
+                    )
                 )
-            )
-        return import_id
+                if existing is not None:
+                    if existing.status == "FAILED":
+                        existing.user_id = context.user_id
+                        existing.filename = filename
+                        existing.filename_hash = filename_hash
+                        existing.status = "PENDING"
+                        existing.total_rows = max(total_rows, 0)
+                        existing.accepted_rows = 0
+                        existing.rejected_rows = 0
+                        existing.orders_created = 0
+                        existing.order_items_created = 0
+                        existing.warnings = []
+                        existing.error_code = None
+                        existing.completed_at = None
+                        return existing.id, True
+                    return existing.id, False
+                self._ensure_shop(session, context)
+                session.add(
+                    DataImport(
+                        id=import_id,
+                        tenant_id=context.tenant_id,
+                        shop_id=context.shop_id,
+                        user_id=context.user_id,
+                        filename=filename,
+                        filename_hash=filename_hash,
+                        fingerprint=fingerprint,
+                        status="PENDING",
+                        total_rows=max(total_rows, 0),
+                    )
+                )
+                session.flush()
+            return import_id, True
+        except IntegrityError:
+            # A concurrent request may have inserted the same fingerprint.
+            with self.database.session() as session:
+                existing = session.scalar(
+                    select(DataImport).where(
+                        DataImport.tenant_id == context.tenant_id,
+                        DataImport.shop_id == context.shop_id,
+                        DataImport.fingerprint == fingerprint,
+                    )
+                )
+                if existing is None:
+                    raise
+                return existing.id, False
 
     def mark_processing(self, context: AuthContext, import_id: str) -> None:
         with self.database.session() as session:
@@ -96,6 +148,8 @@ class SQLAlchemyCommerceRepository:
         platform: str,
         accepted_rows: int,
         rejected_rows: int,
+        orders_created: int,
+        order_items_created: int,
         warnings: list[str],
     ) -> None:
         with self.database.session() as session:
@@ -106,6 +160,8 @@ class SQLAlchemyCommerceRepository:
             record.status = "COMPLETED"
             record.accepted_rows = accepted_rows
             record.rejected_rows = rejected_rows
+            record.orders_created = orders_created
+            record.order_items_created = order_items_created
             record.warnings = list(warnings)
             record.completed_at = datetime.now(timezone.utc)
 
@@ -143,6 +199,8 @@ class SQLAlchemyCommerceRepository:
                 "total_rows": record.total_rows,
                 "accepted_rows": record.accepted_rows,
                 "rejected_rows": record.rejected_rows,
+                "orders_created": record.orders_created,
+                "order_items_created": record.order_items_created,
                 "warnings": record.warnings or [],
                 "created_at": record.created_at,
                 "completed_at": record.completed_at,
@@ -150,12 +208,22 @@ class SQLAlchemyCommerceRepository:
 
     def replace_orders(
         self, context: AuthContext, frame: pd.DataFrame, import_id: str | None = None
-    ) -> int:
+    ) -> ImportWriteResult:
         if frame.empty:
-            return 0
+            return ImportWriteResult(0, 0)
+        orders_created = 0
         with self.database.session() as session:
             platform = str(frame.iloc[0]["platform"])
             self._ensure_shop(session, context, platform)
+            products_by_sku = {
+                item.sku: item
+                for item in session.scalars(
+                    select(Product).where(
+                        Product.tenant_id == context.tenant_id,
+                        Product.shop_id == context.shop_id,
+                    )
+                ).all()
+            }
             for (row_platform, external_order_id), group in frame.groupby(
                 ["platform", "order_id"], sort=False, dropna=False
             ):
@@ -200,6 +268,7 @@ class SQLAlchemyCommerceRepository:
                     refund_amount=_first_number(group, "refund_amount"),
                 )
                 session.add(order)
+                orders_created += 1
                 for _, row in group.iterrows():
                     item = OrderItem(
                         id=_uuid(),
@@ -220,29 +289,26 @@ class SQLAlchemyCommerceRepository:
                     order.items.append(item)
                     sku = item.sku or item.product_id
                     if sku:
-                        product = session.scalar(
-                            select(Product).where(
-                                Product.tenant_id == context.tenant_id,
-                                Product.shop_id == context.shop_id,
-                                Product.sku == sku,
-                            )
-                        )
+                        product = products_by_sku.get(sku)
                         if product is None:
-                            session.add(
-                                Product(
-                                    id=_uuid(),
-                                    tenant_id=context.tenant_id,
-                                    shop_id=context.shop_id,
-                                    sku=sku,
-                                    product_id=item.product_id,
-                                    product_name=item.product_name,
-                                )
+                            product = Product(
+                                id=_uuid(),
+                                tenant_id=context.tenant_id,
+                                shop_id=context.shop_id,
+                                sku=sku,
+                                product_id=item.product_id,
+                                product_name=item.product_name,
                             )
+                            session.add(product)
+                            products_by_sku[sku] = product
                         else:
                             product.product_name = item.product_name
                             product.product_id = item.product_id
             session.flush()
-        return int(len(frame))
+        return ImportWriteResult(
+            orders_created=orders_created,
+            order_items_created=int(len(frame)),
+        )
 
     def load_orders(self, tenant_id: str, shop_id: str) -> pd.DataFrame:
         rows: list[dict[str, Any]] = []
