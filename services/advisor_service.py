@@ -19,10 +19,11 @@ from typing import Optional
 from langchain_chroma import Chroma
 
 from core.llm_client import LLMClient
-from core.prompts import GENERAL_QA_PROMPT
 from rag.rag_service import retrieve_context, format_retrieved_context, get_source_citations
 from tools.business_rule_engine import BusinessSignals
 from config.settings import settings
+from src.agent.prompt import FINORA_TREND_ADVISOR_PROMPT
+from src.agent.workflow import TrendAgentWorkflow
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,9 @@ class AdvisorService:
     ) -> None:
         self._llm = llm_client
         self._vector_store = vector_store
+        self._trend_workflow = TrendAgentWorkflow(
+            response_temperature=settings.ADAPTIVE_RESPONSE_TEMPERATURE
+        )
 
     def answer(
         self,
@@ -83,7 +87,7 @@ class AdvisorService:
                 logger.warning("RAG retrieval failed: %s", exc)
                 warnings.append("Không thể trích xuất kiến thức nội bộ.")
 
-        rag_context = format_retrieved_context(chunks, question)
+        rag_context = format_retrieved_context(chunks, question) if chunks else ""
 
         # ---- Signal context ----------------------------------------------
         signals_text = signals.as_text() if signals else "Chưa có dữ liệu để phân tích signals."
@@ -99,16 +103,30 @@ class AdvisorService:
                 "Chỉ được dùng đúng các số liệu trên; không tự suy diễn số còn thiếu."
             )
 
-        user_message = GENERAL_QA_PROMPT.format(
-            user_question=question,
-            business_context=business_context or "Chưa có dữ liệu kinh doanh được tải lên.",
+        trend_context = ""
+        try:
+            trend_context = self._trend_workflow.build_context(question, order_summary)
+        except Exception as exc:
+            logger.warning("Trend data lookup failed: %s", exc)
+            warnings.append("Không thể truy vấn dữ liệu xu hướng Shopee nội bộ.")
+        response_context = self._trend_workflow.build_response_context(
+            question=question,
+            business_context=business_context,
             business_signals=signals_text,
-            rag_context=rag_context,
+            retrieved_docs=rag_context,
+            trend_context=trend_context,
+            chat_history=history,
         )
+        user_message = response_context.prompt
 
         # ---- LLM call ----------------------------------------------------
         try:
-            response.answer = self._llm.generate_response(user_message, history=history)
+            response.answer = self._llm.generate_response(
+                user_message,
+                system_prompt=FINORA_TREND_ADVISOR_PROMPT,
+                history=history,
+                temperature=self._trend_workflow.response_temperature,
+            )
         except Exception as exc:
             logger.error("LLM call failed: %s", exc)
             response.answer = "⚠️ Không thể kết nối với AI lúc này. Vui lòng thử lại sau."

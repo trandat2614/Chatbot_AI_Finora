@@ -51,6 +51,10 @@ class Settings:
     # LLM generation
     # ------------------------------------------------------------------ #
     LLM_TEMPERATURE: float = float(os.getenv("LLM_TEMPERATURE", "0.3"))
+    ADAPTIVE_RESPONSE_TEMPERATURE: float = min(
+        0.7,
+        max(0.5, float(os.getenv("ADAPTIVE_RESPONSE_TEMPERATURE", "0.6"))),
+    )
     LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "2048"))
     LLM_TIMEOUT: int = int(os.getenv("LLM_TIMEOUT", "60"))
 

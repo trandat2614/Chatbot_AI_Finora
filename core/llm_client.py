@@ -79,6 +79,7 @@ class LLMClient:
         system_prompt: str,
         user_message: str,
         history: Optional[list[dict[str, str]]] = None,
+        temperature: Optional[float] = None,
     ) -> str:
         """Send a single request to the Gemini OpenAI-compatible API.
 
@@ -104,7 +105,7 @@ class LLMClient:
             response = self._client.chat.completions.create(
                 model=self.model,
                 messages=messages,
-                temperature=self.temperature,
+                temperature=self.temperature if temperature is None else temperature,
                 max_tokens=self.max_tokens,
             )
             return response.choices[0].message.content or ""
@@ -136,19 +137,22 @@ class LLMClient:
         user_message: str,
         system_prompt: Optional[str] = None,
         history: Optional[list[dict[str, str]]] = None,
+        temperature: Optional[float] = None,
     ) -> str:
         """Generate a free-form response.
 
         Args:
             user_message: The user's question or instruction.
             system_prompt: Override the default system prompt.
+            history: Prior user/assistant messages in chronological order.
+            temperature: Optional per-response creativity override.
 
         Returns:
             Model response as a string.
         """
         prompt = system_prompt or FINORA_SYSTEM_PROMPT
         logger.debug("generate_response called. model=%s", self.model)
-        return self._call_api(prompt, user_message, history)
+        return self._call_api(prompt, user_message, history, temperature)
 
     def generate_business_analysis(
         self,
