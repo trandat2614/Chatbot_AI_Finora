@@ -1,121 +1,167 @@
-# Triển khai Finora AI Server lên VPS
+# Chuẩn bị Finora AI Server trên VPS
 
-Hướng dẫn này dùng Ubuntu 22.04/24.04, Docker Compose, Nginx và HTTPS. Cấu hình
-khuyến nghị tối thiểu là 1 vCPU, 1 GB RAM và 10 GB ổ đĩa.
+Tài liệu này là runbook staging. Repository không tự triển khai và không thực hiện thay đổi production.
 
-## 1. Chuẩn bị DNS và firewall
+## Kiến trúc mạng
 
-Trỏ bản ghi A của `api.example.com` tới IP VPS. Chỉ mở SSH, HTTP và HTTPS:
-
-```bash
-sudo ufw allow OpenSSH
-sudo ufw allow 'Nginx Full'
-sudo ufw enable
+```text
+Internet -> Nginx :443 -> FastAPI 127.0.0.1:8000
+                              -> PostgreSQL :5432 (Docker internal only)
+                              -> Chroma volume
+                              -> external LLM/embedding API
 ```
 
-Port 8000 được bind vào `127.0.0.1`, không công khai trực tiếp ra Internet.
+Chỉ mở public `80` và `443`. Không publish PostgreSQL. VPS mục tiêu 2 CPU, 4 GB RAM, 35 GB NVMe; không cài local LLM, Kubernetes, Kafka hoặc Elasticsearch.
 
-## 2. Cài Docker và Nginx
+## 1. Chuẩn bị host
+
+Ví dụ Ubuntu LTS:
 
 ```bash
 sudo apt update
-sudo apt install -y ca-certificates curl nginx certbot python3-certbot-nginx
-curl -fsSL https://get.docker.com | sudo sh
-sudo usermod -aG docker "$USER"
+sudo apt install -y ca-certificates curl git nginx certbot python3-certbot-nginx
 ```
 
-Đăng xuất SSH rồi đăng nhập lại để quyền Docker có hiệu lực.
+Cài Docker Engine/Compose theo tài liệu chính thức của Docker cho phiên bản Ubuntu đang dùng. Tạo user deploy không phải root và chỉ cấp quyền cần thiết.
 
-## 3. Đưa source lên VPS
+## 2. Cấu hình production
 
-Ưu tiên push repository lên Git provider riêng, sau đó clone:
-
-```bash
-sudo mkdir -p /opt/finora
-sudo chown "$USER":"$USER" /opt/finora
-git clone <REPOSITORY_URL> /opt/finora/app
-cd /opt/finora/app
-cp .env.example .env
-nano .env
-```
-
-Cấu hình production tối thiểu:
+Clone repository vào thư mục ứng dụng, sao chép `.env.example` thành `.env`, rồi thay toàn bộ placeholder. Cấu hình tối thiểu:
 
 ```dotenv
-GEMINI_API_KEY=<gemini-key>
-GEMINI_MODEL=gemini-2.5-flash
-AI_SERVER_API_KEY=<random-secret-long-value>
-ALLOWED_ORIGINS=https://app.example.com
-HOST=0.0.0.0
-PORT=8000
+ENVIRONMENT=production
+AUTH_REQUIRED=true
+ENABLE_LEGACY_API_KEY=false
+ENABLE_DEMO=false
+ENABLE_API_DOCS=false
+
+WEB_TOKEN_SECRET=<random-at-least-32-characters>
+WEB_TOKEN_ISSUER=finora-web
+WEB_TOKEN_AUDIENCE=finora-ai
+WEB_TOKEN_ALGORITHM=HS256
+FINORA_SERVICE_KEY=<different-random-at-least-32-characters>
+PII_HASH_SECRET=<different-random-at-least-32-characters>
+
+POSTGRES_PASSWORD=<random-database-password>
+DATABASE_URL=postgresql+psycopg://finora:<same-password>@db:5432/finora
+AUTO_CREATE_SCHEMA=false
+
+MAX_UPLOAD_BYTES=10485760
+RAW_UPLOAD_RETENTION_HOURS=24
+RAW_UPLOAD_DIR=data/uploads
+AUDIT_LOG_FILE=logs/audit.log
+ALLOWED_ORIGINS=https://finora.com.vn
+
+GEMINI_API_KEY=<provider-key>
 ```
 
-Sinh khóa server ngẫu nhiên bằng `openssl rand -hex 32`. Không push `.env`, API
-key hoặc secret lên Git.
+Docker Compose tự override `DATABASE_URL` sang service `db`. Không để placeholder `AI_SERVER_API_KEY=change_me_in_production`; có thể để rỗng vì legacy auth đã tắt. Không đặt secret trong Vite variables, Git hoặc shell history.
 
-## 4. Build, test và ingest
+## 3. Build, migration và test staging
 
 ```bash
 docker compose build
 docker compose run --rm api python -m pytest -q
-docker compose run --rm api python ingest.py
+docker compose run --rm api alembic upgrade head
 docker compose up -d
 docker compose ps
-curl http://127.0.0.1:8000/health
+curl --fail http://127.0.0.1:8000/health
 ```
 
-Volume `finora_vector` giữ ChromaDB qua các lần thay container. Chỉ chạy lại
-`ingest.py` khi tài liệu trong `knowledge/` thay đổi hoặc embedding model đổi.
+API container cũng chạy `alembic upgrade head` trước Uvicorn. Chạy migration thủ công trước giúp phát hiện lỗi sớm. Trước mọi migration production, backup PostgreSQL và thử restore trên staging.
 
-## 5. Cấu hình Nginx và HTTPS
+Kiểm tra bảng:
 
 ```bash
-sudo cp deploy/nginx-finora.conf /etc/nginx/sites-available/finora
-sudo sed -i 's/api.example.com/api.ten-mien-cua-ban.com/g' /etc/nginx/sites-available/finora
-sudo ln -s /etc/nginx/sites-available/finora /etc/nginx/sites-enabled/finora
-sudo nginx -t
-sudo systemctl reload nginx
-sudo certbot --nginx -d api.ten-mien-cua-ban.com
+docker compose exec db psql -U finora -d finora -c '\dt'
+docker compose exec api alembic current
 ```
 
-Kiểm tra từ máy khác:
+## 4. Public RAG
 
-```bash
-curl https://api.ten-mien-cua-ban.com/health
-curl -X POST https://api.ten-mien-cua-ban.com/api/chat \
-  -H 'Content-Type: application/json' \
-  -H 'X-API-Key: <server-api-key>' \
-  -d '{"message":"Điểm hòa vốn được tính thế nào?","history":[]}'
-```
-
-## 6. Cập nhật phiên bản mới
-
-```bash
-cd /opt/finora/app
-git pull --ff-only
-docker compose build
-docker compose run --rm api python -m pytest -q
-docker compose up -d --remove-orphans
-docker image prune -f
-```
-
-Nếu `knowledge/` thay đổi, chạy trước khi khởi động lại:
+Chỉ ingest tài liệu public đã rà soát:
 
 ```bash
 docker compose run --rm api python ingest.py
 ```
 
-## 7. Vận hành và khôi phục
+Marketplace spreadsheets/order rows không được ingest vào Chroma. Private knowledge phải đi qua endpoint authenticated để có metadata `tenant_id`, `shop_id`, `visibility`, `document_id`. Sau khi nâng cấp metadata schema, cần re-ingest public knowledge và không tái sử dụng index thiếu metadata.
+
+## 5. Nginx và HTTPS
+
+Thay `server_name` trong `deploy/nginx-finora.conf` bằng `ai.finora.com.vn`, cài config và xin certificate:
 
 ```bash
-docker compose ps
-docker compose logs -f --tail=200 api
-docker compose restart api
-docker compose down
+sudo cp deploy/nginx-finora.conf /etc/nginx/sites-available/finora-ai
+sudo ln -s /etc/nginx/sites-available/finora-ai /etc/nginx/sites-enabled/finora-ai
+sudo nginx -t
+sudo systemctl reload nginx
+sudo certbot --nginx -d ai.finora.com.vn
 ```
 
-`docker compose down` không xóa dữ liệu RAG. Không dùng `docker compose down -v`
-trừ khi chủ động muốn xóa volume ChromaDB và ingest lại từ đầu.
+Sau HTTPS, kiểm tra:
 
-Để rollback, checkout tag/commit ổn định, build lại image và chạy `docker compose
-up -d`. Nên sao lưu `.env`, thư mục `knowledge/` và export/backup volume định kỳ.
+```bash
+curl --fail https://ai.finora.com.vn/health
+```
+
+Nginx phải chuyển tiếp `Authorization` và `X-Finora-Service-Key`, giới hạn body tương thích `MAX_UPLOAD_BYTES`, rate limit và timeout. Không log các header xác thực.
+
+## 6. Smoke test authenticated từ Node host
+
+Tạo token ngắn hạn từ Finora Node backend bằng identity đã authorize, sau đó gọi:
+
+```bash
+curl --fail --show-error \
+  -H "Authorization: Bearer $AI_TEST_TOKEN" \
+  -H "X-Finora-Service-Key: $AI_SERVICE_KEY" \
+  https://ai.finora.com.vn/api/v1/business/overview
+```
+
+Trên server thật, đọc secret vào biến tạm với history tắt; không gõ secret trực tiếp vào command lưu history. Token tenant A không được thấy import/product của tenant B.
+
+## 7. Kết nối Finora web
+
+Trong environment của `Finora/server/`:
+
+```dotenv
+AI_SERVER_URL=https://ai.finora.com.vn
+AI_SERVICE_KEY=<same-as-FINORA_SERVICE_KEY>
+AI_TOKEN_SECRET=<same-as-WEB_TOKEN_SECRET>
+AI_TOKEN_ISSUER=finora-web
+AI_TOKEN_AUDIENCE=finora-ai
+AI_SERVER_TIMEOUT_MS=90000
+```
+
+Không expose các biến này qua `VITE_*`. Xem [WEB_INTEGRATION.md](WEB_INTEGRATION.md) để ký token và gọi `/api/v1`.
+
+## 8. Dữ liệu, retention và backup
+
+- Backup PostgreSQL có mã hóa và kiểm tra restore định kỳ.
+- Backup Chroma/public knowledge theo chính sách; private vectors vẫn phải tenant-filtered khi restore.
+- Rotate audit log; log chỉ chứa identifiers đã hash và metadata an toàn.
+- Raw upload chỉ là dữ liệu tạm, được xóa sau xử lý; cleanup xóa file tồn dư quá `RAW_UPLOAD_RETENTION_HOURS`.
+- Theo dõi dung lượng volume vì VPS chỉ có 35 GB.
+- Không dùng `docker compose down -v` trừ khi chủ đích xóa toàn bộ dữ liệu và đã backup.
+
+## 9. Monitoring tối thiểu
+
+Theo dõi `/health`, restart count, CPU/RAM/disk, PostgreSQL connections/storage, lỗi `401/403/413/422/429/5xx`, latency LLM và audit events. Không log request body, Authorization, service key, API key, PII hoặc file upload.
+
+## 10. Rollback
+
+1. Backup database trước release.
+2. Gắn tag image/commit đang ổn định.
+3. Migration schema hiện tại chỉ có initial upgrade; tạo migration forward-fix cho thay đổi tiếp theo.
+4. Nếu application rollback không tương thích schema, restore database theo runbook đã thử trên staging; không tự chạy downgrade phá dữ liệu.
+
+## 11. Giới hạn trước production
+
+- Rate limiter FastAPI là in-memory; Nginx là outer limiter nhưng multi-instance cần gateway/shared limiter nếu mở rộng.
+- HS256 dùng shared signing secret; asymmetric signing/key rotation chưa có.
+- Chưa có idempotency key/background worker cho import lớn.
+- Cần chạy thử migration và load test trên PostgreSQL thật, không chỉ SQLite.
+- Cần tích hợp repository web thật và thực hiện UAT end-to-end với quyền shop thật.
+- Cần quy trình backup/restore, monitoring, secret rotation và incident response đã được vận hành thử.
+
+Vì các điểm này, kết nối staging có thể chuẩn bị sau khi các smoke test pass, nhưng không được suy ra production-ready chỉ từ pytest.

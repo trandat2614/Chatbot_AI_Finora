@@ -7,6 +7,7 @@ Each document preserves metadata: source, filename, file_type.
 from __future__ import annotations
 
 import logging
+import hashlib
 from pathlib import Path
 from typing import Optional
 
@@ -14,6 +15,8 @@ from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain_core.documents import Document
 
 from utils.file_helpers import list_files
+from src.security.privacy import sanitize_text
+from src.security.uploads import neutralize_spreadsheet_formula
 
 logger = logging.getLogger(__name__)
 
@@ -67,20 +70,23 @@ def _load_spreadsheet(file_path: Path) -> list[Document]:
         frame = frame.dropna(axis=0, how="all").dropna(axis=1, how="all").fillna("")
         if frame.empty:
             continue
+        marketplace = _marketplace_name(list(frame.columns))
+        if marketplace:
+            logger.warning("Skipped structured marketplace sheet; use /api/data/import instead")
+            continue
         safe_columns = [
             column for column in frame.columns
             if not any(marker in str(column).lower() for marker in SENSITIVE_COLUMN_MARKERS)
         ]
-        safe_frame = frame[safe_columns]
+        safe_frame = frame[safe_columns].map(neutralize_spreadsheet_formula)
         csv_content = safe_frame.to_csv(index=False)
-        marketplace = _marketplace_name(list(frame.columns))
-        content = (
+        content = sanitize_text((
             f"DỮ LIỆU EXCEL: {file_path.name}\n"
             f"SÀN: {marketplace or 'Chưa xác định'}\n"
             f"SHEET: {sheet_name}\n"
             f"SỐ DÒNG: {len(frame)} | SỐ CỘT: {len(safe_frame.columns)}\n\n"
             f"{csv_content}"
-        )
+        ), block_prompt_injection=True)
         documents.append(Document(
             page_content=content,
             metadata={
@@ -134,7 +140,10 @@ def _marketplace_summary(files: list[Path]) -> list[Document]:
                 total_orders += orders
                 total_revenue += revenue
         except Exception as exc:
-            logger.warning("Could not summarize marketplace file %s: %s", file_path.name, exc)
+            logger.warning(
+                "Could not summarize marketplace file hash=%s type=%s",
+                hashlib.sha256(file_path.name.encode()).hexdigest()[:12], type(exc).__name__,
+            )
     if not summaries:
         return []
     content = (
@@ -147,7 +156,14 @@ def _marketplace_summary(files: list[Path]) -> list[Document]:
     return [Document(page_content=content, metadata={"source": "marketplace_aggregate", "filename": "marketplace_aggregate", "file_type": "summary"})]
 
 
-def load_document(file_path: Path) -> list[Document]:
+def load_document(
+    file_path: Path,
+    tenant_scope: str = "public",
+    *,
+    tenant_id: str = "__public__",
+    shop_id: str = "__public__",
+    visibility: str | None = None,
+) -> list[Document]:
     """Load a single document and attach metadata.
 
     Args:
@@ -167,21 +183,42 @@ def load_document(file_path: Path) -> list[Document]:
     elif ext in (".xlsx", ".xls"):
         docs = _load_spreadsheet(file_path)
     else:
-        logger.warning("Unsupported file type: %s", file_path)
+        logger.warning("Unsupported document extension: %s", ext)
         return []
 
     # Attach structured metadata
+    safe_filename = (
+        file_path.name if tenant_scope == "public"
+        else hashlib.sha256(file_path.name.encode()).hexdigest()[:16] + ext
+    )
+    selected_visibility = visibility or ("public" if tenant_scope == "public" else "private")
+    document_id = hashlib.sha256(file_path.read_bytes()).hexdigest()
     for doc in docs:
+        if tenant_scope != "public":
+            doc.page_content = doc.page_content.replace(file_path.name, safe_filename)
+        doc.page_content = sanitize_text(doc.page_content, block_prompt_injection=True)
         doc.metadata.update({
-            "source": str(file_path),
-            "filename": file_path.name,
+            "source": str(file_path) if tenant_scope == "public" else safe_filename,
+            "filename": safe_filename,
             "file_type": ext.lstrip("."),
+            "tenant_scope": tenant_scope,
+            "tenant_id": tenant_id,
+            "shop_id": shop_id,
+            "visibility": selected_visibility,
+            "document_id": document_id,
         })
 
     return docs
 
 
-def load_all_documents(directory: Path | str) -> list[Document]:
+def load_all_documents(
+    directory: Path | str,
+    tenant_scope: str = "public",
+    *,
+    tenant_id: str = "__public__",
+    shop_id: str = "__public__",
+    visibility: str | None = None,
+) -> list[Document]:
     """Load all supported documents from a directory.
 
     Args:
@@ -201,14 +238,17 @@ def load_all_documents(directory: Path | str) -> list[Document]:
     all_docs: list[Document] = []
     for file_path in files:
         try:
-            docs = load_document(file_path)
+            docs = load_document(
+                file_path,
+                tenant_scope=tenant_scope,
+                tenant_id=tenant_id,
+                shop_id=shop_id,
+                visibility=visibility,
+            )
             all_docs.extend(docs)
-            logger.debug("Loaded %d page(s) from %s", len(docs), file_path.name)
+            logger.debug("Loaded %d document page(s)", len(docs))
         except Exception as exc:
-            logger.warning("Failed to load %s: %s", file_path.name, exc)
-
-    spreadsheet_files = [path for path in files if path.suffix.lower() in (".xlsx", ".xls")]
-    all_docs.extend(_marketplace_summary(spreadsheet_files))
+            logger.warning("Failed to load document type=%s", type(exc).__name__)
 
     logger.info("Total documents loaded: %d", len(all_docs))
     return all_docs

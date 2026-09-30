@@ -20,6 +20,7 @@ from core.exceptions import (
     ConfigurationError,
 )
 from core.prompts import FINORA_SYSTEM_PROMPT
+from src.security.privacy import sanitize_for_ai, sanitize_text
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +56,7 @@ class LLMClient:
                 "Vui lòng tạo file .env và điền API key."
             )
 
-        # Never log the key — only log a masked version
-        masked = f"{self._api_key[:6]}...{self._api_key[-4:]}" if len(self._api_key) > 10 else "***"
-        logger.info("LLMClient initialised. model=%s key=%s", self.model, masked)
+        logger.info("LLMClient initialised. model=%s", self.model)
 
         base_url = (
             settings.FPT_BASE_URL
@@ -99,9 +98,10 @@ class LLMClient:
         """
         try:
             # Google Generative AI's OpenAI compatibility endpoint only supports Chat Completions
-            messages = [{"role": "system", "content": system_prompt}]
-            messages.extend(history or [])
-            messages.append({"role": "user", "content": user_message})
+            safe_history = sanitize_for_ai(history or [])
+            messages = [{"role": "system", "content": sanitize_text(system_prompt)}]
+            messages.extend(safe_history)
+            messages.append({"role": "user", "content": sanitize_text(user_message)})
             response = self._client.chat.completions.create(
                 model=self.model,
                 messages=messages,
@@ -123,7 +123,7 @@ class LLMClient:
                 "Vui lòng thử lại."
             ) from exc
         except APIError as exc:
-            logger.error("Gemini API error: %s", exc)
+            logger.error("AI provider error type=%s", type(exc).__name__)
             raise LLMClientError(
                 "Gemini API tạm thời không khả dụng."
             ) from exc

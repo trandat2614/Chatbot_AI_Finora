@@ -45,6 +45,13 @@ logs/
 
 # Generated local vector database (recreate with: python ingest.py)
 vector_db/
+data/tenants/
+data/uploads/
+data/finora.db
+data/finora.db-*
+logs/audit.log
+# Legacy marketplace order export; import through the tenant-scoped API instead.
+knowledge/Shopee.xlsx
 
 # Jupyter Notebooks (not the main app)
 *.ipynb

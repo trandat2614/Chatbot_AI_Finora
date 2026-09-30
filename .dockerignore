@@ -5,3 +5,9 @@
 __pycache__
 *.pyc
 vector_db
+data/tenants
+data/uploads
+data/finora.db
+data/finora.db-*
+logs
+knowledge/Shopee.xlsx

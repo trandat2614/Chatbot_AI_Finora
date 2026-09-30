@@ -6,12 +6,16 @@ import math
 import re
 import sqlite3
 import unicodedata
+import hashlib
+from datetime import datetime, timezone
 from collections import Counter
 from pathlib import Path
 from typing import Any, Literal
 
 import pandas as pd
 from pandas.errors import EmptyDataError, ParserError
+
+from config.settings import settings
 
 logger = logging.getLogger(__name__)
 
@@ -263,9 +267,52 @@ class TrendDataLoader:
             return None
         frame["gender"] = gender
         frame["timeframe"] = timeframe
+        capture_date = self._capture_date(path)
+        frame["capture_date"] = capture_date
         frame["source_file"] = path.name
         frame["source_row"] = range(2, len(frame) + 2)
+        frame["snapshot_id"] = [
+            hashlib.sha256(f"{path.name}:{capture_date}:{row}".encode()).hexdigest()
+            for row in frame["source_row"]
+        ]
         return frame
+
+    def _capture_date(self, path: Path) -> str:
+        match = re.search(r"(?<!\d)(\d{1,2})-(\d{1,2})(?:-(\d{2,4}))?(?!\d)", path.stem)
+        modified = datetime.fromtimestamp(path.stat().st_mtime, tz=timezone.utc)
+        explicit_import_date = None
+        if settings.TREND_IMPORT_DATE:
+            try:
+                explicit_import_date = datetime.fromisoformat(
+                    settings.TREND_IMPORT_DATE
+                ).date()
+            except ValueError:
+                self.warnings.append(
+                    "TREND_IMPORT_DATE không hợp lệ; yêu cầu định dạng YYYY-MM-DD."
+                )
+        if not match:
+            if explicit_import_date is not None:
+                return explicit_import_date.isoformat()
+            self.warnings.append(
+                f"{path.name}: không có capture date; tạm dùng file mtime và cần import lại với TREND_IMPORT_DATE."
+            )
+            return modified.date().isoformat()
+        day, month = int(match.group(1)), int(match.group(2))
+        if match.group(3):
+            year = int(match.group(3))
+        elif explicit_import_date is not None:
+            year = explicit_import_date.year
+        else:
+            year = modified.year
+            self.warnings.append(
+                f"{path.name}: filename thiếu năm; dùng năm từ file mtime. "
+                "Đặt TREND_IMPORT_DATE khi import chính thức."
+            )
+        year = year + 2000 if year < 100 else year
+        try:
+            return datetime(year, month, day, tzinfo=timezone.utc).date().isoformat()
+        except ValueError:
+            return modified.date().isoformat()
 
     @staticmethod
     def _metadata_from_filename(filename: str) -> tuple[Gender, Timeframe]:
@@ -287,7 +334,7 @@ class TrendDataLoader:
 
     @staticmethod
     def _empty_frame() -> pd.DataFrame:
-        columns = [*EXPECTED_COLUMNS, "gender", "timeframe", "source_file", "source_row"]
+        columns = [*EXPECTED_COLUMNS, "gender", "timeframe", "capture_date", "source_file", "source_row", "snapshot_id"]
         return pd.DataFrame(columns=columns)
 
     def _persist_sqlite(self) -> None:
@@ -295,7 +342,30 @@ class TrendDataLoader:
         self.database_path.parent.mkdir(parents=True, exist_ok=True)
         with sqlite3.connect(self.database_path) as connection:
             connection.execute("BEGIN")
-            self._data.to_sql("trends", connection, if_exists="replace", index=False)
+            exists = connection.execute(
+                "SELECT 1 FROM sqlite_master WHERE type='table' AND name='trends'"
+            ).fetchone()
+            if not exists:
+                self._data.to_sql("trends", connection, if_exists="append", index=False)
+            else:
+                existing_columns = {
+                    row[1] for row in connection.execute("PRAGMA table_info(trends)").fetchall()
+                }
+                if "capture_date" not in existing_columns:
+                    connection.execute('ALTER TABLE trends ADD COLUMN "capture_date" TEXT')
+                if "snapshot_id" not in existing_columns:
+                    connection.execute('ALTER TABLE trends ADD COLUMN "snapshot_id" TEXT')
+                # Legacy rows had no immutable snapshot identity and are the same
+                # generated cache that is being re-imported below.
+                connection.execute("DELETE FROM trends WHERE snapshot_id IS NULL")
+                snapshot_ids = self._data["snapshot_id"].astype(str).tolist()
+                connection.executemany(
+                    "DELETE FROM trends WHERE snapshot_id = ?", [(value,) for value in snapshot_ids]
+                )
+                self._data.to_sql("trends", connection, if_exists="append", index=False)
+            connection.execute(
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_trends_snapshot ON trends(snapshot_id)"
+            )
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS idx_trends_gender_timeframe ON trends(gender, timeframe)"
             )
@@ -303,6 +373,19 @@ class TrendDataLoader:
                 f'CREATE INDEX IF NOT EXISTS idx_trends_growth ON trends("{SALES_GROWTH_COLUMN}")'
             )
             connection.commit()
+
+    def select_history(self, gender: str, timeframe: str) -> pd.DataFrame:
+        """Read all retained snapshots using a parameterized query."""
+        selected_gender = normalise_gender(gender)
+        selected_timeframe = normalise_timeframe(timeframe)
+        if not self.database_path.exists():
+            return self._empty_frame()
+        with sqlite3.connect(self.database_path) as connection:
+            return pd.read_sql_query(
+                "SELECT * FROM trends WHERE gender = ? AND timeframe = ? ORDER BY capture_date, source_row",
+                connection,
+                params=(selected_gender, selected_timeframe),
+            )
 
     def select(self, gender: str, timeframe: str) -> pd.DataFrame:
         """Return records matching a normalised gender and timeframe."""

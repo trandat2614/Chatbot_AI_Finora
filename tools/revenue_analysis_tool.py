@@ -117,7 +117,8 @@ class RevenueAnalysisTool:
         # ---- Core metrics ----------------------------------------------------
         metrics.total_revenue = float(df["revenue"].sum())
         metrics.average_revenue = float(df["revenue"].mean())
-        metrics.latest_revenue = float(df["revenue"].iloc[-1]) if len(df) > 0 else 0.0
+        valid_revenue = df["revenue"].dropna()
+        metrics.latest_revenue = float(valid_revenue.iloc[-1]) if not valid_revenue.empty else 0.0
         metrics.total_orders = int(df["orders"].sum())
         metrics.total_marketing_cost = float(df["marketing_cost"].sum())
         metrics.total_new_customers = int(df["new_customers"].sum())
@@ -134,9 +135,9 @@ class RevenueAnalysisTool:
                 metrics.worst_period = str(df["revenue"].idxmin())
 
         # Revenue growth (last vs second-to-last)
-        if len(df) >= 2:
-            prev = float(df["revenue"].iloc[-2])
-            curr = float(df["revenue"].iloc[-1])
+        if len(valid_revenue) >= 2:
+            prev = float(valid_revenue.iloc[-2])
+            curr = float(valid_revenue.iloc[-1])
             if prev > 0:
                 metrics.revenue_growth_rate = (curr - prev) / prev * 100
             else:
@@ -152,9 +153,9 @@ class RevenueAnalysisTool:
                 metrics.order_growth_rate = (curr_orders - prev_orders) / prev_orders * 100
 
         # Revenue trend (linear slope direction)
-        if len(df) >= 3:
-            x = np.arange(len(df))
-            y = df["revenue"].values.astype(float)
+        if len(valid_revenue) >= 3:
+            x = np.arange(len(valid_revenue))
+            y = valid_revenue.values.astype(float)
             slope = np.polyfit(x, y, 1)[0]
             if slope > 0:
                 metrics.revenue_trend = "📈 Xu hướng tăng"
