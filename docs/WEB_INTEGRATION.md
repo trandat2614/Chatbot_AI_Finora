@@ -255,7 +255,34 @@ transport. Không trả stack trace hay upstream secret về browser.
 Các endpoint `/api/*` cũ đang được giữ dưới dạng deprecated wrappers. `X-API-Key` chỉ dùng cho local/test hoặc migration có kiểm soát khi `ENABLE_LEGACY_API_KEY=true`; production phải dùng `/api/v1`, JWT + service key và đặt `ENABLE_LEGACY_API_KEY=false`.
 
 Legacy `/api/chat` tạm hỗ trợ `orderSummary` từ Web hiện tại để tránh gián đoạn
-trong thời gian migration. Bridge này chỉ nhận các KPI số thuộc whitelist, bỏ mọi
-text/field lạ và chặn output LLM có số không xuất hiện trong snapshot. PostgreSQL
+trong thời gian migration. Bridge này chỉ nhận các KPI số thuộc whitelist, bỏ
+field lạ và chặn output LLM có số không xuất hiện trong snapshot. Tên sản phẩm/SKU
+được lọc PII và prompt injection trước khi dùng để gắn nhãn KPI sản phẩm. PostgreSQL
 vẫn luôn được ưu tiên khi có dữ liệu. `/api/v1/chat` không nhận `orderSummary`;
 Web cần chuyển sang import/sync dữ liệu authoritative và contract v1.
+
+Nên gửi KPI dưới dạng JSON number. Luồng legacy cũng hỗ trợ số đã format như
+`"1.250.000"`, `"1,250,000"`, `"1.250.000 ₫"` và tỷ lệ `"12,5%"`.
+Các nhóm `currentMonth`, `previousMonth`, `metrics`, `summary`, `topProducts`
+được giữ riêng, tránh doanh thu kỳ trước hoặc doanh thu sản phẩm ghi đè tổng shop.
+KPI thiếu vẫn là thiếu, không tự điền bằng 0. Snapshot chưa có ngày báo cáo không
+được mặc định là dữ liệu tháng hiện tại.
+
+Ví dụ request tương thích (shop_id phải thuộc quyền của token/API key):
+
+```json
+{
+  "shop_id": "shop-a",
+  "message": "Phân tích dữ liệu kinh doanh được gửi kèm",
+  "orderSummary": {
+    "totalRevenue": 1250000,
+    "totalOrders": 10,
+    "currentMonth": {"totalRevenue": 1250000},
+    "previousMonth": {"totalRevenue": 900000},
+    "topProducts": [{"productName": "Áo cotton", "revenue": 250000}]
+  },
+  "history": []
+}
+```
+
+Chi tiết hồi quy từ Phase 2 và kiểm thử: [CHAT_REGRESSION.md](CHAT_REGRESSION.md).
