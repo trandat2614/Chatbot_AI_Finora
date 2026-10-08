@@ -358,9 +358,22 @@ class TrendDataLoader:
                 # Legacy rows had no immutable snapshot identity and are the same
                 # generated cache that is being re-imported below.
                 connection.execute("DELETE FROM trends WHERE snapshot_id IS NULL")
-                snapshot_ids = self._data["snapshot_id"].astype(str).tolist()
+
+                # A filename is part of snapshot_id. When an operator renames a
+                # source file, deleting by snapshot_id alone leaves the same
+                # capture duplicated under its old name. Replace every capture
+                # date present in this import, while retaining genuinely older
+                # capture dates for historical queries.
+                capture_dates = sorted(
+                    {
+                        str(value)
+                        for value in self._data["capture_date"].dropna().tolist()
+                        if str(value).strip()
+                    }
+                )
                 connection.executemany(
-                    "DELETE FROM trends WHERE snapshot_id = ?", [(value,) for value in snapshot_ids]
+                    "DELETE FROM trends WHERE capture_date = ?",
+                    [(value,) for value in capture_dates],
                 )
                 self._data.to_sql("trends", connection, if_exists="append", index=False)
             connection.execute(

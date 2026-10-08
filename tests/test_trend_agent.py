@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 
 from services.advisor_service import AdvisorService
+from src.agent.intent_router import Intent, IntentRouter
 from src.agent.prompt import ADAPTIVE_RESPONSE_INSTRUCTION
 from src.agent.workflow import RESPONSE_TEMPERATURE, TREND_TOOL_REGISTRY, TrendAgentWorkflow
 from src.services.trend_service import TrendDataLoader
@@ -34,6 +35,51 @@ def test_loader_parses_all_sample_csvs_and_builds_database(tmp_path: Path) -> No
     with sqlite3.connect(database_path) as connection:
         database_count = connection.execute("SELECT COUNT(*) FROM trends").fetchone()[0]
     assert database_count == len(loader.data)
+
+
+def test_loader_replaces_same_capture_after_source_file_is_renamed(tmp_path: Path) -> None:
+    old_path = tmp_path / "shopee-xu-huong 29-09 ttnu.csv"
+    new_path = tmp_path / "shopee-xu-huong 29-09 thoi trang nu.csv"
+    database_path = tmp_path / "trends.sqlite3"
+    pd.DataFrame([{"Sản phẩm": "Áo nữ"}]).to_csv(
+        old_path, index=False, encoding="utf-8-sig"
+    )
+
+    loader = TrendDataLoader(tmp_path, database_path)
+    old_path.rename(new_path)
+    loader.load()
+
+    with sqlite3.connect(database_path) as connection:
+        rows = connection.execute(
+            "SELECT source_file FROM trends ORDER BY source_row"
+        ).fetchall()
+    assert rows == [(new_path.name,)]
+
+
+def test_short_fashion_category_routes_to_matching_market_data() -> None:
+    class _TrendDecisionService:
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, str]] = []
+
+        def get_market_trends(self, category: str, period: str) -> dict:
+            self.calls.append((category, period))
+            return {
+                "status": "OK",
+                "source": "public_marketplace_snapshot",
+                "category": category,
+                "period": period,
+                "items": [{"rank": 1, "product_name": "Áo nữ", "price": 100_000}],
+            }
+
+    service = _TrendDecisionService()
+    advisor = AdvisorService(llm_client=_EchoLLM(), decision_service=service)
+    response = advisor.answer("Thời trang nữ")
+
+    assert IntentRouter().route("Thời trang nữ") == Intent.MARKET_TRENDS
+    assert response.intent == Intent.MARKET_TRENDS.value
+    assert response.analysis_status == "OK"
+    assert response.tool_context_used
+    assert service.calls == [("nu", "7d")]
 
 
 def test_compare_product_tool_returns_financial_gap_analysis() -> None:

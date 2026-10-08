@@ -141,6 +141,12 @@ class IntentRouter:
         for intent, terms in self.RULES:
             if any(term in folded for term in terms):
                 return intent
+        # A short category correction should repeat the market query. Longer
+        # business questions already match their more specific intent above.
+        if len(folded.split()) <= 8 and any(
+            term in folded for term in ("thoi trang nu", "thoi trang nam")
+        ):
+            return Intent.MARKET_TRENDS
         if self.requires_account_data(question):
             # Unknown account-specific KPI wording must query verified shop data.
             return Intent.BUSINESS_OVERVIEW

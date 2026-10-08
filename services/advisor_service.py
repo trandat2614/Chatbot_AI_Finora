@@ -38,7 +38,7 @@ from src.agent.context_builder import (
 from src.agent.prompt import FINORA_TREND_ADVISOR_PROMPT
 from src.agent.workflow import TrendAgentWorkflow
 from src.agent.intent_router import Intent, IntentRouter
-from src.services.trend_service import fold_text
+from src.services.trend_service import fold_text, normalise_gender
 from src.security.privacy import sanitize_for_ai, sanitize_text
 from src.services.decision_intelligence_service import DecisionIntelligenceService
 from src.tools.business_tools import build_business_tools
@@ -270,7 +270,7 @@ class AdvisorService:
         self, intent: Intent, question: str, filters: Optional[dict[str, str]]
     ) -> dict:
         assert self._decision_service is not None
-        category = str((filters or {}).get("category") or "nam")
+        category = self._analysis_category(question, (filters or {}).get("category"))
         period = self._analysis_period(question, (filters or {}).get("period"))
         sku_match = re.search(r"\bsku[\s:#-]*([\w.-]+)", question, re.I)
         sku = sku_match.group(1) if sku_match else ""
@@ -307,6 +307,20 @@ class AdvisorService:
             return {"status": "INSUFFICIENT_DATA"}
         tool_name, arguments = selected
         return json.loads(str(self._business_tools[tool_name].invoke(arguments)))
+
+    @staticmethod
+    def _analysis_category(question: str, requested: str | None) -> str:
+        if requested:
+            try:
+                return normalise_gender(requested)
+            except ValueError:
+                pass
+        folded = fold_text(question)
+        if re.search(r"\b(?:thoi trang nu|nu|women|woman|female)\b", folded):
+            return "nu"
+        if re.search(r"\b(?:thoi trang nam|nam|men|man|male)\b", folded):
+            return "nam"
+        return "nam"
 
     @staticmethod
     def _analysis_period(question: str, requested: str | None) -> str:
