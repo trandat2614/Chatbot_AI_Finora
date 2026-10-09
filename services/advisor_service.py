@@ -117,41 +117,48 @@ class AdvisorService:
         response.intent = intent.value
         tool_result: dict[str, Any] | None = None
         trend_context = ""
-        summary_result = (
-            build_legacy_summary_result(order_summary)
-            if allow_legacy_summary and isinstance(order_summary, dict)
-            else None
-        )
-
-        if order_summary is not None and summary_result is None:
-            warnings.append(
-                "orderSummary legacy đã bị bỏ qua vì không phải dữ liệu KPI được xác thực."
-            )
 
         # Account-specific and KPI questions are database/tool-first. Failure or
         # missing provenance may use the guarded legacy Web snapshot during the
         # migration period, but never arbitrary prompt/history numbers.
         if intent.requires_business_data:
             if self._decision_service is not None:
+                # This flag means a tenant-scoped deterministic query was
+                # attempted. An empty shop is a valid result, not a tool error.
+                response.tool_context_used = True
                 try:
                     tool_result = self._invoke_decision_tool(intent, question, filters)
                 except Exception as exc:
                     logger.warning("Verified business tool failed: %s", type(exc).__name__)
+                    warnings.append("Không thể truy vấn dữ liệu đã xác thực của shop.")
 
-            if not has_verified_metrics(tool_result or {}) and summary_result is not None:
-                tool_result = summary_result
-                logger.info("Using allowlisted legacy Web business snapshot")
+            # Parse the deprecated client snapshot lazily and only when the
+            # authoritative repository has no usable metrics. This prevents an
+            # empty orderSummary attached to greetings/market questions from
+            # surfacing an irrelevant warning in the chat UI.
+            if (
+                not has_verified_metrics(tool_result or {})
+                and allow_legacy_summary
+                and isinstance(order_summary, dict)
+                and bool(order_summary)
+            ):
+                summary_result = build_legacy_summary_result(order_summary)
+                if summary_result is not None:
+                    tool_result = summary_result
+                    response.tool_context_used = True
+                    logger.info("Using allowlisted legacy Web business snapshot")
+                else:
+                    warnings.append(
+                        "orderSummary legacy đã bị bỏ qua vì không chứa KPI hợp lệ."
+                    )
 
             if not has_verified_metrics(tool_result or {}):
-                if self._decision_service is not None:
-                    warnings.append("Không thể truy vấn dữ liệu đã xác thực của shop.")
                 response.analysis_status = "INSUFFICIENT_DATA"
                 response.answer = insufficient_data_answer(intent)
                 response.quantitative_generation_blocked = True
                 response.warnings = warnings
                 return response
 
-            response.tool_context_used = True
             assert tool_result is not None
             response.analysis_status = str(tool_result.get("status", "INSUFFICIENT_DATA"))
             response.data_grounded = True

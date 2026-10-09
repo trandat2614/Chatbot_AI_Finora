@@ -261,6 +261,11 @@ field lạ và chặn output LLM có số không xuất hiện trong snapshot. T
 vẫn luôn được ưu tiên khi có dữ liệu. `/api/v1/chat` không nhận `orderSummary`;
 Web cần chuyển sang import/sync dữ liệu authoritative và contract v1.
 
+`orderSummary` chỉ được đọc khi câu hỏi cần KPI shop và repository chưa có metric
+hợp lệ. Payload rỗng hoặc payload đi kèm lời chào/câu hỏi kiến thức chung bị bỏ qua
+im lặng, không tạo warning trên giao diện. Payload không rỗng nhưng không chứa KPI
+hợp lệ chỉ tạo warning khi người dùng thực sự yêu cầu phân tích dữ liệu shop.
+
 Nên gửi KPI dưới dạng JSON number. Luồng legacy cũng hỗ trợ số đã format như
 `"1.250.000"`, `"1,250,000"`, `"1.250.000 ₫"` và tỷ lệ `"12,5%"`.
 Các nhóm `currentMonth`, `previousMonth`, `metrics`, `summary`, `topProducts`
@@ -285,4 +290,5 @@ Ví dụ request tương thích (shop_id phải thuộc quyền của token/API 
 }
 ```
 
-Chi tiết hồi quy từ Phase 2 và kiểm thử: [CHAT_REGRESSION.md](CHAT_REGRESSION.md).
+Các hồi quy tương thích Phase 2 nằm trong
+[`tests/test_legacy_chat.py`](../tests/test_legacy_chat.py).
