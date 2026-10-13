@@ -86,6 +86,50 @@ def test_v1_import_status_and_overview_end_to_end(api_client: TestClient) -> Non
     assert overview.status_code == 200
     assert overview.json()["data"]["metrics"]["order_count"] == 1
 
+    lookup = api_client.get("/api/v1/orders/ORDER-1", headers=_headers())
+    assert lookup.status_code == 200, lookup.text
+    assert lookup.json()["data"]["order"]["order_id"] == "ORDER-1"
+    assert lookup.json()["data"]["order"]["items"][0]["product_name"]
+
+    chat = api_client.post(
+        "/api/v1/chat",
+        headers=_headers(),
+        json={"message": "Tìm đơn hàng ORDER-1", "history": []},
+    )
+    assert chat.status_code == 200, chat.text
+    assert chat.json()["data"]["intent"] == "ORDER_LOOKUP"
+    assert "ORDER-1" in chat.json()["data"]["answer"]
+    assert "100.000 VND" in chat.json()["data"]["answer"]
+
+    followup = api_client.post(
+        "/api/v1/chat",
+        headers=_headers(),
+        json={
+            "message": "Đơn này đã giao chưa?",
+            "history": [
+                {"role": "user", "content": "Tìm đơn hàng ORDER-1"},
+                {"role": "assistant", "content": chat.json()["data"]["answer"]},
+            ],
+        },
+    )
+    assert followup.status_code == 200, followup.text
+    assert followup.json()["data"]["intent"] == "ORDER_LOOKUP"
+    assert "ORDER-1" in followup.json()["data"]["answer"]
+
+    statistics = api_client.get("/api/v1/analytics/orders/summary", headers=_headers())
+    assert statistics.status_code == 200, statistics.text
+    assert statistics.json()["data"]["total_orders"] == 1
+    assert statistics.json()["data"]["revenue"] == 100_000
+
+    stats_chat = api_client.post(
+        "/api/v1/chat",
+        headers=_headers(),
+        json={"message": "Tôi có bao nhiêu đơn?", "history": []},
+    )
+    assert stats_chat.status_code == 200, stats_chat.text
+    assert stats_chat.json()["data"]["intent"] == "ORDER_STATISTICS"
+    assert "1 đơn" in stats_chat.json()["data"]["answer"]
+
 
 def test_v1_rejects_invalid_audience_with_standard_error(api_client: TestClient) -> None:
     response = api_client.get(
@@ -113,6 +157,8 @@ def test_openapi_v1_has_strict_named_response_contracts(api_client: TestClient) 
     required = {
         "/api/v1/data/import",
         "/api/v1/data/imports/{import_id}",
+        "/api/v1/orders/{order_id}",
+        "/api/v1/analytics/orders/summary",
         "/api/v1/business/overview",
         "/api/v1/business/health",
         "/api/v1/business/revenue-leakage",

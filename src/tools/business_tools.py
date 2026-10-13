@@ -19,6 +19,23 @@ def build_business_tools(service: DecisionIntelligenceService) -> tuple[Structur
     def get_business_health() -> str:
         return _json(service.get_business_health())
 
+    def get_order_by_id(order_id: str, platform: str = "") -> str:
+        return _json(service.get_order_by_id(order_id, platform or None))
+
+    def get_order_statistics(
+        start_at: str = "", end_at: str = "", platform: str = "", status: str = ""
+    ) -> str:
+        from datetime import datetime
+
+        return _json(
+            service.get_order_statistics(
+                start_at=datetime.fromisoformat(start_at) if start_at else None,
+                end_at=datetime.fromisoformat(end_at) if end_at else None,
+                platform=platform or None,
+                status=status or None,
+            )
+        )
+
     def analyze_product(sku: str = "") -> str:
         return _json(service.analyze_product(sku or None))
 
@@ -41,6 +58,16 @@ def build_business_tools(service: DecisionIntelligenceService) -> tuple[Structur
         return _json(service.generate_communication_plan(category, period, objective))
 
     definitions: tuple[tuple[str, Callable, str], ...] = (
+        (
+            "get_order_by_id",
+            get_order_by_id,
+            "Look up one exact order in the already-authorized tenant and shop.",
+        ),
+        (
+            "get_order_statistics",
+            get_order_statistics,
+            "Calculate order and revenue statistics from the authorized shop database.",
+        ),
         ("get_business_health", get_business_health, "Read-only shop health analysis."),
         ("analyze_product", analyze_product, "Read-only SKU diagnosis."),
         ("analyze_revenue_leakage", analyze_revenue_leakage, "Read-only GMV-to-net analysis."),

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import uuid
+import logging
 from datetime import datetime, timezone
 from typing import Any
 
@@ -12,6 +13,8 @@ from sqlalchemy.orm import Session, selectinload
 from src.db.models import DataImport, Order, OrderItem, Product, Shop
 from src.db.session import Database, get_database
 from src.security.auth import AuthContext
+
+logger = logging.getLogger(__name__)
 
 
 def _uuid() -> str:
@@ -283,6 +286,77 @@ class SQLAlchemyCommerceRepository:
                         }
                     )
         return pd.DataFrame(rows)
+
+    def get_orders_by_external_id(
+        self,
+        tenant_id: str,
+        shop_id: str,
+        order_id: str,
+        platform: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """Return exact, tenant-bound matches without exposing other shops.
+
+        A list is intentional: marketplace order identifiers are not globally
+        unique, so callers must handle an identifier shared by two platforms.
+        """
+        normalized_id = str(order_id).strip()
+        if not normalized_id or len(normalized_id) > 200:
+            return []
+        with self.database.session() as session:
+            statement = (
+                select(Order)
+                .options(selectinload(Order.items))
+                .where(
+                    Order.tenant_id == tenant_id,
+                    Order.shop_id == shop_id,
+                    Order.external_order_id == normalized_id,
+                )
+                .order_by(Order.platform)
+            )
+            if platform:
+                statement = statement.where(Order.platform == str(platform).strip().lower())
+            orders = session.scalars(statement).all()
+            results = [self._serialize_order(order) for order in orders]
+        logger.info(
+            "order_lookup matches=%s platform_filter=%s",
+            len(results),
+            bool(platform),
+        )
+        return results
+
+    @staticmethod
+    def _serialize_order(order: Order) -> dict[str, Any]:
+        return {
+            "order_id": order.external_order_id,
+            "platform": order.platform,
+            "status": order.status,
+            "total_amount": round(float(order.order_total), 2),
+            "currency": "VND",
+            "order_date": order.created_at,
+            "shipping": {
+                "shipping_fee": round(float(order.shipping_fee), 2),
+            },
+            "fees": {
+                "platform_fee": round(float(order.platform_fee), 2),
+                "transaction_fee": round(float(order.transaction_fee), 2),
+                "service_fee": round(float(order.service_fee), 2),
+                "refund_amount": round(float(order.refund_amount), 2),
+            },
+            "items": [
+                {
+                    "item_id": item.external_item_id,
+                    "product_id": item.product_id,
+                    "sku": item.sku,
+                    "product_name": item.product_name,
+                    "variation": item.variation,
+                    "quantity": item.quantity,
+                    "unit_price": round(float(item.selling_price), 2),
+                    "line_total": round(float(item.selling_price) * item.quantity, 2),
+                }
+                for item in order.items
+            ],
+            "import_batch_id": order.import_id,
+        }
 
     def list_products(self, tenant_id: str, shop_id: str) -> list[dict]:
         with self.database.session() as session:

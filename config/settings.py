@@ -112,6 +112,7 @@ class Settings:
         "AUTO_CREATE_SCHEMA",
         "false" if os.getenv("ENVIRONMENT", "development").lower() == "production" else "true",
     ).lower() in ("1", "true", "yes")
+    BUSINESS_TIMEZONE: str = os.getenv("BUSINESS_TIMEZONE", "Asia/Ho_Chi_Minh")
 
     # ------------------------------------------------------------------ #
     # Paths (resolved relative to this file's parent's parent)

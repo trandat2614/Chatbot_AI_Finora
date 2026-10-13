@@ -15,6 +15,7 @@ class StrictModel(BaseModel):
 class AnalysisStatus(str, Enum):
     OK = "OK"
     INSUFFICIENT_DATA = "INSUFFICIENT_DATA"
+    ERROR = "ERROR"
 
 
 class UnifiedOrderItem(StrictModel):

@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from config.settings import settings
 from services.advisor_service import AdvisorService
+from src.agent.intent_router import Intent, IntentRouter
 from src.api.dependencies.context import require_auth_context
 from src.api.routes.common import meta, tenant_rag_store, tenant_vector_store
 from src.schemas.api import ChatData, ChatRequest, ChatResponse, Source
@@ -31,7 +32,11 @@ def chat(
                 "message": f"history tối đa {settings.MAX_HISTORY_MESSAGES} tin nhắn.",
             },
         )
-    if request.app.state.llm_client is None:
+    routed_intent = IntentRouter().route(payload.message)
+    if request.app.state.llm_client is None and routed_intent not in {
+        Intent.ORDER_LOOKUP,
+        Intent.ORDER_STATISTICS,
+    }:
         raise HTTPException(
             status_code=503,
             detail={"code": "LLM_NOT_CONFIGURED", "message": "Dịch vụ AI chưa được cấu hình."},
@@ -67,6 +72,7 @@ def chat(
         ),
         order_summary=None,
         history=[item.model_dump() for item in payload.history],
+        correlation_id=request.state.request_id,
     )
     audit_event(
         "ai_analysis",

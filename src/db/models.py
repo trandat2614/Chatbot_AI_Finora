@@ -72,6 +72,7 @@ class Order(Base):
             name="uq_order_external_owner",
         ),
         Index("ix_order_owner_created", "tenant_id", "shop_id", "created_at"),
+        Index("ix_order_owner_external", "tenant_id", "shop_id", "external_order_id"),
     )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True)

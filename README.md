@@ -54,6 +54,8 @@ JWT phải có `user_id`, `tenant_id`, `shop_id`, `role`, `iss`, `aud`, `exp`. A
 
 | Method | Endpoint | Chức năng |
 | --- | --- | --- |
+| `GET` | `/api/v1/orders/{order_id}` | Tra cứu chính xác đơn trong tenant/shop hiện tại |
+| `GET` | `/api/v1/analytics/orders/summary` | Thống kê đơn có lọc thời gian/nền tảng/trạng thái |
 | `POST` | `/api/v1/data/import` | Validate, chuẩn hóa và lưu CSV/XLSX |
 | `GET` | `/api/v1/data/imports/{import_id}` | Trạng thái import |
 | `GET` | `/api/v1/business/overview` | Tổng quan deterministic |

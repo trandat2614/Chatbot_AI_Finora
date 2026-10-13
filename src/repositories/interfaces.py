@@ -11,6 +11,10 @@ from src.security.auth import AuthContext
 class OrderRepository(Protocol):
     def load_orders(self, tenant_id: str, shop_id: str) -> pd.DataFrame: ...
 
+    def get_orders_by_external_id(
+        self, tenant_id: str, shop_id: str, order_id: str, platform: str | None = None
+    ) -> list[dict]: ...
+
     def replace_orders(
         self, context: AuthContext, frame: pd.DataFrame, import_id: str | None = None
     ) -> int: ...

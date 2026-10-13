@@ -25,7 +25,10 @@ def audit_event(
     safe_details = {
         str(key): value
         for key, value in (details or {}).items()
-        if key in {"filename_hash", "record_count", "status", "intent", "content_type", "size"}
+        if key in {
+            "filename_hash", "record_count", "status", "intent", "content_type", "size",
+            "request_id", "match_count", "tool",
+        }
         and isinstance(value, (str, int, float, bool, type(None)))
     }
     event = {

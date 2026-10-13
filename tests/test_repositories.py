@@ -55,6 +55,27 @@ def test_repository_isolates_tenant_and_deduplicates_order_fees(tmp_path) -> Non
     assert repository.load_orders("tenant-a", "shop-b").empty
     assert own["platform_fee"].sum() == 30
     assert MetricService().calculate(own).marketplace_fee == 33
+    match = repository.get_orders_by_external_id("tenant-a", "shop-a", "order-1")
+    assert len(match) == 1
+    assert match[0]["order_id"] == "order-1"
+    assert match[0]["total_amount"] == 200
+    assert len(match[0]["items"]) == 2
+    assert repository.get_orders_by_external_id("tenant-b", "shop-a", "order-1") == []
+    assert repository.get_orders_by_external_id("tenant-a", "shop-b", "order-1") == []
+    database.dispose()
+
+
+def test_repository_preserves_leading_zero_order_id(tmp_path) -> None:
+    database = Database(f"sqlite:///{tmp_path / 'leading-zero.db'}")
+    database.create_schema()
+    repository = SQLAlchemyCommerceRepository(database)
+    context = AuthContext("user-a", "tenant-a", "shop-a", "owner")
+    value = frame()
+    value["order_id"] = "001234567890"
+    repository.replace_orders(context, value)
+
+    match = repository.get_orders_by_external_id("tenant-a", "shop-a", "001234567890")
+    assert match[0]["order_id"] == "001234567890"
     database.dispose()
 
 

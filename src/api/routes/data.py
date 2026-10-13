@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import hashlib
+import logging
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
@@ -20,6 +21,7 @@ from src.services.normalization.service import DataNormalizationService
 from src.services.raw_upload_service import RawUploadService
 
 router = APIRouter(prefix="/api/v1/data", tags=["v1-data"])
+logger = logging.getLogger(__name__)
 
 
 @router.post(
@@ -41,6 +43,12 @@ async def import_data(
     contents = await file.read(settings.MAX_UPLOAD_BYTES + 1)
     await file.close()
     import_id: str | None = None
+    logger.info(
+        "data_import_received size=%s content_type=%s request_id=%s",
+        len(contents),
+        file.content_type,
+        request.state.request_id,
+    )
     try:
         filename = validate_upload(
             file.filename or "", file.content_type, contents, settings.MAX_UPLOAD_BYTES
@@ -57,8 +65,14 @@ async def import_data(
             import_id = repository.create_import(
                 context,
                 safe_filename,
-                hashlib.sha256(filename.encode()).hexdigest(),
+                hashlib.sha256(contents).hexdigest(),
                 len(source),
+            )
+            logger.info(
+                "data_import_created import_id=%s rows=%s request_id=%s",
+                import_id,
+                len(source),
+                request.state.request_id,
             )
             repository.mark_processing(context, import_id)
             result = normalizer.normalize(source)
@@ -86,6 +100,22 @@ async def import_data(
             status_code=422,
             detail={"code": "INVALID_IMPORT_DATA", "message": str(exc)},
         ) from exc
+    except Exception:
+        if import_id:
+            repository.fail_import(context, import_id, "IMPORT_SYSTEM_ERROR")
+        logger.exception(
+            "data_import_failed import_id=%s request_id=%s",
+            import_id or "not_created",
+            request.state.request_id,
+        )
+        audit_event(
+            "data_import",
+            context,
+            outcome="error",
+            resource="orders",
+            details={"request_id": request.state.request_id},
+        )
+        raise
 
     record = repository.get_import(context, import_id)
     assert record is not None
@@ -93,7 +123,18 @@ async def import_data(
         "data_import",
         context,
         resource="orders",
-        details={"record_count": record["accepted_rows"], "status": record["status"]},
+        details={
+            "record_count": record["accepted_rows"],
+            "status": record["status"],
+            "request_id": request.state.request_id,
+        },
+    )
+    logger.info(
+        "data_import_completed import_id=%s accepted=%s rejected=%s request_id=%s",
+        import_id,
+        record["accepted_rows"],
+        record["rejected_rows"],
+        request.state.request_id,
     )
     return DataImportResponse(data=ImportData(**record), meta=meta(request))
 

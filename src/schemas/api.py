@@ -56,6 +56,76 @@ class ImportStatusResponse(DataImportResponse):
     pass
 
 
+class OrderItemData(APIModel):
+    item_id: str
+    product_id: str | None = None
+    sku: str | None = None
+    product_name: str
+    variation: str | None = None
+    quantity: int
+    unit_price: float
+    line_total: float
+
+
+class OrderData(APIModel):
+    order_id: str
+    platform: str
+    status: str
+    total_amount: float
+    currency: str
+    items: list[OrderItemData]
+    order_date: datetime | None = None
+    shipping: dict[str, float]
+    fees: dict[str, float]
+    import_batch_id: str | None = None
+
+
+class OrderLookupData(APIModel):
+    found: Literal[True] = True
+    order: OrderData
+
+
+class OrderLookupResponse(APIModel):
+    success: Literal[True] = True
+    data: OrderLookupData
+    meta: ResponseMeta
+
+
+class TopProductData(APIModel):
+    product_name: str
+    units_sold: int
+    revenue: float
+
+
+class OrderTrendData(APIModel):
+    date: str
+    order_count: int
+    revenue: float
+
+
+class OrderStatisticsData(APIModel):
+    status: Literal["OK"] = "OK"
+    timezone: str
+    filters: dict[str, str | None]
+    revenue_definition: str
+    total_orders: int
+    revenue: float
+    currency: str
+    average_order_value: float
+    cancelled_orders: int
+    orders_by_status: dict[str, int]
+    orders_by_platform: dict[str, int]
+    revenue_by_platform: dict[str, float]
+    top_products: list[TopProductData]
+    trend: list[OrderTrendData]
+
+
+class OrderStatisticsResponse(APIModel):
+    success: Literal[True] = True
+    data: OrderStatisticsData
+    meta: ResponseMeta
+
+
 class BusinessOverviewData(APIModel):
     status: AnalysisStatus
     metrics: MetricResult

@@ -14,8 +14,10 @@ from __future__ import annotations
 import logging
 import json
 import re
+from datetime import datetime, timedelta
 from dataclasses import dataclass, field
 from typing import Any, Optional, TYPE_CHECKING
+from zoneinfo import ZoneInfo
 
 if TYPE_CHECKING:
     from langchain_chroma import Chroma
@@ -54,7 +56,7 @@ class AdvisorService:
 
     def __init__(
         self,
-        llm_client: LLMClient,
+        llm_client: LLMClient | None,
         vector_store: Optional[Chroma] = None,
         tenant_vector_store: Optional[Chroma] = None,
         tenant_scope: str | None = None,
@@ -84,6 +86,7 @@ class AdvisorService:
         signals: Optional[BusinessSignals] = None,
         order_summary: Optional[dict] = None,
         history: Optional[list[dict[str, str]]] = None,
+        correlation_id: str | None = None,
     ) -> AdvisorResponse:
         """Generate an AI-powered business advisory response.
 
@@ -98,6 +101,21 @@ class AdvisorService:
         response = AdvisorResponse()
         warnings = []
         safe_query = sanitize_text(question)
+        intent = self._intent_router.route(question)
+        response.intent = intent.value
+        logger.info(
+            "chat_intent intent=%s request_id=%s",
+            intent.value,
+            correlation_id or "unknown",
+        )
+
+        # Exact order lookup and deterministic statistics always go to the
+        # transactional data store first. They do not use RAG or LLM memory as
+        # a source of truth.
+        if intent is Intent.ORDER_LOOKUP:
+            return self._answer_order_lookup(question, history, correlation_id)
+        if intent is Intent.ORDER_STATISTICS:
+            return self._answer_order_statistics(question, correlation_id)
 
         # ---- RAG retrieval -----------------------------------------------
         chunks = []
@@ -156,8 +174,6 @@ class AdvisorService:
             )
 
         trend_context = ""
-        intent = self._intent_router.route(question)
-        response.intent = intent.value
         try:
             if self._decision_service and intent not in {Intent.GENERAL_CHAT, Intent.POLICY_QUESTION}:
                 tool_result = self._invoke_decision_tool(intent, question, order_summary)
@@ -182,6 +198,11 @@ class AdvisorService:
         user_message = response_context.prompt
 
         # ---- LLM call ----------------------------------------------------
+        if self._llm is None:
+            response.analysis_status = "ERROR"
+            response.answer = "Dịch vụ AI chưa được cấu hình."
+            response.warnings = [*warnings, "LLM_NOT_CONFIGURED"]
+            return response
         try:
             response.answer = self._llm.generate_response(
                 user_message,
@@ -196,6 +217,179 @@ class AdvisorService:
 
         response.warnings = warnings
         return response
+
+    def _answer_order_lookup(
+        self,
+        question: str,
+        history: Optional[list[dict[str, str]]],
+        correlation_id: str | None,
+    ) -> AdvisorResponse:
+        response = AdvisorResponse(intent=Intent.ORDER_LOOKUP.value)
+        order_id = self._intent_router.extract_order_id(question)
+        if order_id is None:
+            order_id = self._intent_router.extract_order_id_from_history(history)
+        if order_id is None:
+            response.analysis_status = "INSUFFICIENT_DATA"
+            response.answer = "Bạn vui lòng cung cấp mã đơn hàng cần kiểm tra."
+            return response
+        platform = self._extract_platform(question)
+        try:
+            logger.info(
+                "chat_tool_call tool=get_order_by_id request_id=%s",
+                correlation_id or "unknown",
+            )
+            result = json.loads(
+                str(
+                    self._business_tools["get_order_by_id"].invoke(
+                        {"order_id": order_id, "platform": platform or ""}
+                    )
+                )
+            )
+            logger.info(
+                "chat_tool_result tool=get_order_by_id status=%s request_id=%s",
+                result.get("status", "UNKNOWN"),
+                correlation_id or "unknown",
+            )
+        except Exception:
+            logger.exception(
+                "Order lookup tool failed request_id=%s", correlation_id or "unknown"
+            )
+            response.analysis_status = "ERROR"
+            response.answer = "Hiện không thể kiểm tra đơn hàng. Vui lòng thử lại sau."
+            response.warnings = ["ORDER_LOOKUP_UNAVAILABLE"]
+            return response
+
+        status = result.get("status")
+        if status == "NOT_FOUND":
+            response.analysis_status = "INSUFFICIENT_DATA"
+            response.answer = (
+                f"Không tìm thấy đơn {order_id} trong phạm vi dữ liệu của shop hiện tại."
+            )
+            return response
+        if status == "AMBIGUOUS":
+            response.analysis_status = "INSUFFICIENT_DATA"
+            response.answer = (
+                f"Mã đơn {order_id} tồn tại trên nhiều nền tảng "
+                f"({', '.join(result.get('platforms', []))}). Bạn muốn kiểm tra nền tảng nào?"
+            )
+            return response
+
+        order = result["order"]
+        items = order.get("items", [])
+        item_text = "; ".join(
+            f"{item.get('product_name', 'Sản phẩm')} × {item.get('quantity', 0)}"
+            for item in items[:5]
+        ) or "chưa có chi tiết sản phẩm"
+        response.answer = (
+            f"Đơn {order['order_id']} ({str(order['platform']).upper()}): "
+            f"trạng thái {order['status']}; tổng tiền "
+            f"{self._format_vnd(order.get('total_amount', 0))}; {item_text}."
+        )
+        return response
+
+    def _answer_order_statistics(
+        self, question: str, correlation_id: str | None
+    ) -> AdvisorResponse:
+        response = AdvisorResponse(intent=Intent.ORDER_STATISTICS.value)
+        start_at, end_at = self._statistics_range(question)
+        platform = self._extract_platform(question)
+        folded = self._fold(question)
+        # Cancellation questions use the aggregate cancelled_orders field. Do
+        # not pre-filter to an English status because marketplaces localize it.
+        status = None
+        try:
+            logger.info(
+                "chat_tool_call tool=get_order_statistics request_id=%s",
+                correlation_id or "unknown",
+            )
+            result = json.loads(
+                str(
+                    self._business_tools["get_order_statistics"].invoke(
+                        {
+                            "start_at": start_at.isoformat() if start_at else "",
+                            "end_at": end_at.isoformat() if end_at else "",
+                            "platform": platform or "",
+                            "status": status or "",
+                        }
+                    )
+                )
+            )
+        except Exception:
+            logger.exception(
+                "Order statistics tool failed request_id=%s", correlation_id or "unknown"
+            )
+            response.analysis_status = "ERROR"
+            response.answer = "Hiện không thể truy xuất thống kê đơn hàng. Vui lòng thử lại sau."
+            response.warnings = ["ORDER_STATISTICS_UNAVAILABLE"]
+            return response
+
+        if "ban chay" in folded and result.get("top_products"):
+            top = result["top_products"][0]
+            response.answer = (
+                f"Sản phẩm bán chạy nhất là {top['product_name']} với "
+                f"{top['units_sold']} sản phẩm, doanh thu {self._format_vnd(top['revenue'])}."
+            )
+        elif "nen tang nao" in folded and result.get("revenue_by_platform"):
+            name, amount = max(result["revenue_by_platform"].items(), key=lambda item: item[1])
+            response.answer = (
+                f"{name.upper()} có doanh thu cao nhất: {self._format_vnd(amount)}."
+            )
+        elif "huy" in folded:
+            response.answer = f"Có {result['cancelled_orders']} đơn bị hủy trong kỳ đã chọn."
+        elif "doanh thu" in folded:
+            response.answer = (
+                f"Doanh thu trong kỳ là {self._format_vnd(result['revenue'])} từ "
+                f"{result['total_orders']} đơn."
+            )
+        else:
+            response.answer = (
+                f"Có {result['total_orders']} đơn trong kỳ đã chọn; doanh thu "
+                f"{self._format_vnd(result['revenue'])}."
+            )
+        return response
+
+    @staticmethod
+    def _extract_platform(question: str) -> str | None:
+        folded = AdvisorService._fold(question)
+        if "shopee" in folded:
+            return "shopee"
+        if "tiktok" in folded:
+            return "tiktok_shop"
+        if "lazada" in folded:
+            return "lazada"
+        return None
+
+    @staticmethod
+    def _fold(value: str) -> str:
+        from src.services.trend_service import fold_text
+
+        return fold_text(value)
+
+    @staticmethod
+    def _format_vnd(value: object) -> str:
+        return f"{float(value or 0):,.0f}".replace(",", ".") + " VND"
+
+    def _statistics_range(self, question: str) -> tuple[datetime | None, datetime | None]:
+        folded = self._fold(question)
+        zone = ZoneInfo(settings.BUSINESS_TIMEZONE)
+        now = datetime.now(zone)
+        day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        if "hom nay" in folded or "today" in folded:
+            return day_start, day_start + timedelta(days=1)
+        if "tuan nay" in folded or "this week" in folded:
+            start = day_start - timedelta(days=day_start.weekday())
+            return start, start + timedelta(days=7)
+        if "thang nay" in folded or "this month" in folded:
+            start = day_start.replace(day=1)
+            if start.month == 12:
+                end = start.replace(year=start.year + 1, month=1)
+            else:
+                end = start.replace(month=start.month + 1)
+            return start, end
+        match = re.search(r"\b(7|30)\s*(?:ngay|days?|d)\b", folded)
+        if match:
+            return now - timedelta(days=int(match.group(1))), now
+        return None, None
 
     def _invoke_decision_tool(
         self, intent: Intent, question: str, order_summary: Optional[dict]

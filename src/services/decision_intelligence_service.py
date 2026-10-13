@@ -9,6 +9,7 @@ from src.services.business_health_service import BusinessHealthService
 from src.services.communication_planner_service import CommunicationPlannerService
 from src.services.market_trend_service import MarketTrendService
 from src.services.metric_service import MetricService
+from src.services.order_analytics_service import OrderAnalyticsService
 from src.services.opportunity_matching_service import OpportunityMatchingService
 from src.services.product_doctor_service import ProductDoctorService
 from src.services.revenue_leakage_service import RevenueLeakageService
@@ -23,6 +24,7 @@ class DecisionIntelligenceService:
         self.shop_id = shop_id
         self.store = store or TenantDataStore()
         self.metrics = MetricService()
+        self.order_analytics = OrderAnalyticsService()
         self.health_service = BusinessHealthService()
         self.leakage_service = RevenueLeakageService()
         self.product_service = ProductDoctorService()
@@ -39,6 +41,42 @@ class DecisionIntelligenceService:
 
     def orders(self) -> pd.DataFrame:
         return self.store.load_orders(self.tenant_id, self.shop_id)
+
+    def get_order_by_id(self, order_id: str, platform: str | None = None) -> dict:
+        matches = self.store.get_orders_by_external_id(
+            self.tenant_id, self.shop_id, order_id, platform
+        )
+        if not matches:
+            return {
+                "status": "NOT_FOUND",
+                "found": False,
+                "order_id": order_id,
+                "scope": "current_shop",
+            }
+        if len(matches) > 1:
+            return {
+                "status": "AMBIGUOUS",
+                "found": False,
+                "order_id": order_id,
+                "platforms": sorted({str(item["platform"]) for item in matches}),
+            }
+        return {"status": "OK", "found": True, "order": matches[0]}
+
+    def get_order_statistics(
+        self,
+        *,
+        start_at=None,
+        end_at=None,
+        platform: str | None = None,
+        status: str | None = None,
+    ) -> dict:
+        return self.order_analytics.summarize(
+            self.orders(),
+            start_at=start_at,
+            end_at=end_at,
+            platform=platform,
+            status=status,
+        )
 
     def get_business_health(self) -> dict:
         frame = self.orders()
