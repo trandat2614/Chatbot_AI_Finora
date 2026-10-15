@@ -19,7 +19,7 @@ Tất cả endpoint yêu cầu `Authorization: Bearer ...` và `X-Finora-Service
 
 | Method | Endpoint | Mô tả |
 | --- | --- | --- |
-| `GET` | `/api/insights?limit=5&status=new` | Insight gần đây, mới nhất trước; `status` là `new`, `read`, `dismissed` hoặc bỏ trống |
+| `GET` | `/api/insights?limit=5&status=new` | Insight gần đây, mới nhất trước; `status` là `new`, `read` hoặc `dismissed` (mặc định `new`) |
 | `POST` | `/api/insights/generate` | Chạy pipeline; body hỗ trợ `period` (`7d`, `30d`, `90d`) và `force` |
 | `PATCH` | `/api/insights/{id}` | Đổi trạng thái insight thuộc đúng tenant/shop hiện tại |
 
