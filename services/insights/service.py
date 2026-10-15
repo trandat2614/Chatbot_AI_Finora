@@ -104,6 +104,22 @@ class InsightRepository:
             ).all()
             return [_stored(row) for row in rows]
 
+    def has_any(self, tenant_id: str, shop_id: str) -> bool:
+        with self.database.session() as session:
+            return session.scalar(
+                select(AIInsight.id)
+                .where(AIInsight.tenant_id == tenant_id, AIInsight.shop_id == shop_id)
+                .limit(1)
+            ) is not None
+
+    def has_any(self, tenant_id: str, shop_id: str) -> bool:
+        with self.database.session() as session:
+            return session.scalar(
+                select(AIInsight.id)
+                .where(AIInsight.tenant_id == tenant_id, AIInsight.shop_id == shop_id)
+                .limit(1)
+            ) is not None
+
     def upsert_period(
         self,
         tenant_id: str,

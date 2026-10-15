@@ -51,7 +51,10 @@ def list_insights(
         resource="ai_insights",
         details={"request_id": request.state.request_id, "record_count": len(items)},
     )
-    return _response(items, "not_enough_data" if not items else None)
+    empty_reason = None
+    if not items and not service.repository.has_any(context.tenant_id, context.shop_id):
+        empty_reason = "not_enough_data"
+    return _response(items, empty_reason)
 
 
 @router.post("/generate", response_model=InsightsResponse)
