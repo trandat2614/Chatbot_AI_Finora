@@ -114,6 +114,36 @@ class Settings:
     ).lower() in ("1", "true", "yes")
     BUSINESS_TIMEZONE: str = os.getenv("BUSINESS_TIMEZONE", "Asia/Ho_Chi_Minh")
 
+    # AI Business Insights rules. Values are ratios/counts rather than absolute
+    # currency amounts so the same rules work for shops of different sizes.
+    INSIGHT_MIN_ORDERS: int = int(os.getenv("INSIGHT_MIN_ORDERS", "5"))
+    INSIGHT_SIGNIFICANT_CHANGE_PCT: float = float(
+        os.getenv("INSIGHT_SIGNIFICANT_CHANGE_PCT", "20")
+    )
+    INSIGHT_CHANNEL_CONCENTRATION_PCT: float = float(
+        os.getenv("INSIGHT_CHANNEL_CONCENTRATION_PCT", "70")
+    )
+    INSIGHT_WEAK_CHANNEL_DROP_PCT: float = float(
+        os.getenv("INSIGHT_WEAK_CHANNEL_DROP_PCT", "30")
+    )
+    INSIGHT_LOW_MARGIN_PCT: float = float(os.getenv("INSIGHT_LOW_MARGIN_PCT", "10"))
+    INSIGHT_HIGH_MARGIN_PCT: float = float(os.getenv("INSIGHT_HIGH_MARGIN_PCT", "40"))
+    INSIGHT_COST_GROWTH_GAP_PCT: float = float(
+        os.getenv("INSIGHT_COST_GROWTH_GAP_PCT", "15")
+    )
+    INSIGHT_PRODUCT_CONCENTRATION_PCT: float = float(
+        os.getenv("INSIGHT_PRODUCT_CONCENTRATION_PCT", "50")
+    )
+    INSIGHT_LOW_PRODUCT_SHARE_PCT: float = float(
+        os.getenv("INSIGHT_LOW_PRODUCT_SHARE_PCT", "2")
+    )
+    INSIGHT_BREAK_EVEN_SLOW_PROGRESS_PCT: float = float(
+        os.getenv("INSIGHT_BREAK_EVEN_SLOW_PROGRESS_PCT", "25")
+    )
+    INSIGHT_TENANT_THRESHOLDS_JSON: str = os.getenv(
+        "INSIGHT_TENANT_THRESHOLDS_JSON", ""
+    )
+
     # ------------------------------------------------------------------ #
     # Paths (resolved relative to this file's parent's parent)
     # ------------------------------------------------------------------ #
@@ -221,6 +251,33 @@ class Settings:
     @classmethod
     def active_embedding_model(cls) -> str:
         return cls.FPT_EMBEDDING_MODEL if cls.AI_PROVIDER == "fpt" else cls.EMBEDDING_MODEL
+
+    @classmethod
+    def insight_thresholds(cls, tenant_id: str) -> dict[str, float | int]:
+        defaults: dict[str, float | int] = {
+            "min_orders": cls.INSIGHT_MIN_ORDERS,
+            "significant_change_pct": cls.INSIGHT_SIGNIFICANT_CHANGE_PCT,
+            "channel_concentration_pct": cls.INSIGHT_CHANNEL_CONCENTRATION_PCT,
+            "weak_channel_drop_pct": cls.INSIGHT_WEAK_CHANNEL_DROP_PCT,
+            "low_margin_pct": cls.INSIGHT_LOW_MARGIN_PCT,
+            "high_margin_pct": cls.INSIGHT_HIGH_MARGIN_PCT,
+            "cost_growth_gap_pct": cls.INSIGHT_COST_GROWTH_GAP_PCT,
+            "product_concentration_pct": cls.INSIGHT_PRODUCT_CONCENTRATION_PCT,
+            "low_product_share_pct": cls.INSIGHT_LOW_PRODUCT_SHARE_PCT,
+            "break_even_slow_progress_pct": cls.INSIGHT_BREAK_EVEN_SLOW_PROGRESS_PCT,
+        }
+        if not cls.INSIGHT_TENANT_THRESHOLDS_JSON.strip():
+            return defaults
+        try:
+            configured = json.loads(cls.INSIGHT_TENANT_THRESHOLDS_JSON)
+        except json.JSONDecodeError as exc:
+            raise EnvironmentError(
+                "INSIGHT_TENANT_THRESHOLDS_JSON không phải JSON hợp lệ."
+            ) from exc
+        overrides = configured.get(tenant_id, {}) if isinstance(configured, dict) else {}
+        if not isinstance(overrides, dict):
+            raise EnvironmentError("Ngưỡng insight của tenant phải là một JSON object.")
+        return {**defaults, **{key: value for key, value in overrides.items() if key in defaults}}
 
 
 settings = Settings()

@@ -7,6 +7,7 @@ from typing import Protocol
 import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field
 
+from config.settings import settings
 from src.repositories.interfaces import CommerceRepository
 from src.services.metric_service import cancelled_mask
 
@@ -127,4 +128,4 @@ class DefaultDataProvider:
         # The current production schema has no persisted capital/fixed-cost
         # settings. Integrators can replace this provider without changing the
         # metrics/rules/generator pipeline.
-        return ShopSettings()
+        return ShopSettings(rule_thresholds=settings.insight_thresholds(tenant_id))
