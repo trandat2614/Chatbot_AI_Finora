@@ -43,9 +43,9 @@ class PeriodTotals(MetricModel):
     orders: int = 0
     units: int = 0
     aov: float = 0
-    cost_of_goods: float = 0
+    cost_of_goods: float | None = None
     expenses: float = 0
-    profit: float = 0
+    profit: float | None = None
     profit_margin_pct: float | None = None
 
 
@@ -98,27 +98,32 @@ class InsightMetrics(MetricModel):
     rule_thresholds: dict[str, float | int] = Field(default_factory=dict)
 
 
-def _percentage_change(current: float, previous: float) -> float | None:
-    if previous <= 0:
+def _percentage_change(current: float | None, previous: float | None) -> float | None:
+    if current is None or previous is None or previous <= 0:
         return None
     return round((current - previous) / previous * 100, 4)
 
 
 def _totals(orders: list[OrderRecord], expenses: float) -> PeriodTotals:
     revenue = sum(item.revenue for item in orders)
-    cogs = sum(item.cost_of_goods for item in orders)
-    order_count = len({item.order_id for item in orders})
+    cogs_known = bool(orders) and all(item.cost_of_goods is not None for item in orders)
+    cogs = sum(float(item.cost_of_goods or 0) for item in orders) if cogs_known else None
+    order_count = len({(item.channel, item.order_id) for item in orders})
     units = sum(item.quantity for item in orders)
-    profit = revenue - cogs - expenses
+    profit = revenue - cogs - expenses if cogs is not None else None
     return PeriodTotals(
         revenue=round(revenue, 2),
         orders=order_count,
         units=units,
         aov=round(revenue / order_count, 2) if order_count else 0,
-        cost_of_goods=round(cogs, 2),
+        cost_of_goods=round(cogs, 2) if cogs is not None else None,
         expenses=round(expenses, 2),
-        profit=round(profit, 2),
-        profit_margin_pct=round(profit / revenue * 100, 4) if revenue > 0 else None,
+        profit=round(profit, 2) if profit is not None else None,
+        profit_margin_pct=(
+            round(profit / revenue * 100, 4)
+            if profit is not None and revenue > 0
+            else None
+        ),
     )
 
 
@@ -128,7 +133,7 @@ def _break_even(
     period: PeriodRange,
 ) -> BreakEvenMetrics | None:
     target = settings.break_even_target or settings.investment_capital
-    if target is None:
+    if target is None or totals.profit is None:
         return None
     remaining = max(target - totals.profit, 0)
     contribution_per_order = totals.profit / totals.orders if totals.orders and totals.profit > 0 else 0
@@ -168,6 +173,11 @@ def collect_metrics(
         )
     )
     shop_settings = provider.get_shop_settings(tenant_id)
+    # One configured fixed-cost amount applies to each compared period.
+    # Providers should omit it when those costs are already ExpenseRecords.
+    fixed_costs = shop_settings.fixed_costs or 0
+    current_expenses += fixed_costs
+    previous_expenses += fixed_costs
     current = _totals(current_orders, current_expenses)
     previous = _totals(previous_orders, previous_expenses)
 
@@ -183,7 +193,7 @@ def collect_metrics(
         by_month[month]["revenue"] = float(by_month[month]["revenue"]) + item.revenue
         order_ids = by_month[month]["orders"]
         assert isinstance(order_ids, set)
-        order_ids.add(item.order_id)
+        order_ids.add((item.channel, item.order_id))
     for item in previous_orders:
         previous_by_channel[item.channel] += item.revenue
 
@@ -195,7 +205,13 @@ def collect_metrics(
             previous_revenue=round(previous_by_channel.get(name, 0), 2),
             change_pct=_percentage_change(revenue, previous_by_channel.get(name, 0)),
         )
-        for name, revenue in sorted(by_channel.items(), key=lambda pair: (-pair[1], pair[0]))
+        for name, revenue in sorted(
+            (
+                (name, by_channel.get(name, 0))
+                for name in set(by_channel) | set(previous_by_channel)
+            ),
+            key=lambda pair: (-pair[1], pair[0]),
+        )
     ]
     products = [
         ProductMetric(

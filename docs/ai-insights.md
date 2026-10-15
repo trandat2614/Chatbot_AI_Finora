@@ -137,7 +137,7 @@ Nếu backend chính có app factory riêng, mount `src.api.routes.insights.rout
 | Sản phẩm | `OrderRecord.product` | `order_items.product_name` |
 | Số lượng | `OrderRecord.quantity` | `order_items.quantity` |
 | Doanh thu dòng | `OrderRecord.revenue` | `selling_price × quantity`, bỏ đơn hủy |
-| Giá vốn | `OrderRecord.cost_of_goods` | Chưa có trong schema, mặc định `0`; BE phải nối ledger/COGS thật |
+| Giá vốn | `OrderRecord.cost_of_goods` | Chưa có trong schema, mặc định chưa xác định; BE phải nối ledger/COGS thật |
 | Phí order | `ExpenseRecord.amount/category` | platform, transaction, service, shipping fee và refund |
 | Vốn đầu tư | `ShopSettings.investment_capital` | Chưa có trong schema hiện tại |
 | Chi phí cố định | `ShopSettings.fixed_costs` | Chưa có trong schema hiện tại |
@@ -145,6 +145,7 @@ Nếu backend chính có app factory riêng, mount `src.api.routes.insights.rout
 | Override rule | `ShopSettings.rule_thresholds` | `INSIGHT_TENANT_THRESHOLDS_JSON` |
 
 Không suy ra COGS từ `Product.margin` nếu chưa thống nhất margin là số tiền hay tỷ lệ. Khi chưa có cấu hình hòa vốn, phần hòa vốn được bỏ qua và không báo lỗi.
+Khi COGS chưa có, `profit`/`profit_margin_pct` được xem là chưa xác định và các rule về lợi nhuận/hòa vốn không chạy; hệ thống không giả định giá vốn bằng 0.
 
 ### 3. Gọi refresh sau thay đổi dữ liệu
 

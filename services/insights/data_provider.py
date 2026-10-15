@@ -23,7 +23,7 @@ class OrderRecord(ProviderModel):
     product: str
     quantity: int = Field(ge=0)
     revenue: float = Field(ge=0)
-    cost_of_goods: float = Field(default=0, ge=0)
+    cost_of_goods: float | None = Field(default=None, ge=0)
     fees: float = Field(default=0, ge=0)
 
 
@@ -59,9 +59,17 @@ class DefaultDataProvider:
     def __init__(self, repository: OrderRepository, shop_id: str) -> None:
         self.repository = repository
         self.shop_id = shop_id
+        self._tenant_frames: dict[str, pd.DataFrame] = {}
+
+    def _load_frame(self, tenant_id: str) -> pd.DataFrame:
+        if tenant_id not in self._tenant_frames:
+            self._tenant_frames[tenant_id] = self.repository.load_orders(
+                tenant_id, self.shop_id
+            )
+        return self._tenant_frames[tenant_id]
 
     def _period_frame(self, tenant_id: str, start: date, end: date) -> pd.DataFrame:
-        frame = self.repository.load_orders(tenant_id, self.shop_id)
+        frame = self._load_frame(tenant_id)
         if frame.empty:
             return frame
         data = frame.copy()

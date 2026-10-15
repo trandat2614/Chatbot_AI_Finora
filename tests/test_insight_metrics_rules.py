@@ -46,7 +46,50 @@ def _order(
         product=product,
         quantity=1,
         revenue=revenue,
+        cost_of_goods=0,
     )
+
+
+def test_missing_cogs_does_not_invent_profit_or_margin() -> None:
+    period = _period()
+    order = OrderRecord(
+        order_id="one",
+        date=period.end,
+        channel="fixture-channel",
+        product="fixture-product",
+        quantity=1,
+        revenue=100,
+    )
+    metrics = collect_metrics("tenant-a", period, MemoryProvider([order]))
+    assert metrics.current.profit is None
+    assert metrics.current.profit_margin_pct is None
+
+
+def test_fixed_costs_reduce_profit_for_each_comparison_period() -> None:
+    period = _period()
+    provider = MemoryProvider(
+        [
+            _order("current", period.end, revenue=100),
+            _order("previous", period.previous_end, revenue=80),
+        ],
+        shop_settings=ShopSettings(fixed_costs=25),
+    )
+    metrics = collect_metrics("tenant-a", period, provider)
+    assert metrics.current.profit == 75
+    assert metrics.previous.profit == 55
+
+
+def test_channel_that_disappears_is_still_compared() -> None:
+    period = _period()
+    provider = MemoryProvider(
+        [_order("previous", period.previous_end, channel="vanished-channel")]
+        + [_order(str(index), period.end, channel="current-channel") for index in range(5)]
+    )
+    metrics = collect_metrics("tenant-a", period, provider)
+    vanished = next(item for item in metrics.channels if item.channel == "vanished-channel")
+    assert vanished.revenue == 0
+    assert vanished.change_pct == -100
+    assert "weak_channel" in {item.type for item in evaluate_rules(metrics)}
 
 
 def _period() -> PeriodRange:
