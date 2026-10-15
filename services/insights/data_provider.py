@@ -8,7 +8,7 @@ import pandas as pd
 from pydantic import BaseModel, ConfigDict, Field
 
 from config.settings import settings
-from src.repositories.interfaces import CommerceRepository
+from src.repositories.interfaces import OrderRepository
 from src.services.metric_service import cancelled_mask
 
 
@@ -56,7 +56,7 @@ class DefaultDataProvider:
     about its tenant boundary.
     """
 
-    def __init__(self, repository: CommerceRepository, shop_id: str) -> None:
+    def __init__(self, repository: OrderRepository, shop_id: str) -> None:
         self.repository = repository
         self.shop_id = shop_id
 
