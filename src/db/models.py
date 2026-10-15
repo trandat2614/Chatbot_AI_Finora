@@ -1,11 +1,12 @@
 """Relational persistence models for tenant-scoped commerce and AI data."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy import (
     JSON,
     Boolean,
+    Date,
     DateTime,
     Float,
     ForeignKey,
@@ -227,3 +228,30 @@ class AuditEvent(Base):
     resource: Mapped[str | None] = mapped_column(String(100))
     details: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+
+
+class AIInsight(Base):
+    __tablename__ = "ai_insights"
+    __table_args__ = (
+        UniqueConstraint(
+            "tenant_id", "shop_id", "type", "period_start", "period_end",
+            name="uq_ai_insight_period_type",
+        ),
+        Index("ix_ai_insights_tenant_created", "tenant_id", "created_at"),
+        Index("ix_ai_insights_scope_created", "tenant_id", "shop_id", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    shop_id: Mapped[str] = mapped_column(String(200), nullable=False)
+    type: Mapped[str] = mapped_column(String(100), nullable=False)
+    severity: Mapped[str] = mapped_column(String(20), nullable=False)
+    title: Mapped[str] = mapped_column(String(60), nullable=False)
+    summary: Mapped[str] = mapped_column(Text, nullable=False)
+    recommendation: Mapped[str] = mapped_column(Text, nullable=False)
+    evidence: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    period_start: Mapped[date] = mapped_column(Date, nullable=False)
+    period_end: Mapped[date] = mapped_column(Date, nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="new")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    data_hash: Mapped[str] = mapped_column(String(64), nullable=False)
