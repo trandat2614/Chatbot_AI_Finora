@@ -5,7 +5,7 @@ import hashlib
 import logging
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, HTTPException, Request, UploadFile
 
 from config.settings import settings
 from src.api.dependencies.context import require_auth_context, require_write_role
@@ -19,6 +19,7 @@ from src.security.privacy import sanitize_text
 from src.security.uploads import UnsafeUploadError, validate_csv_shape, validate_upload
 from src.services.normalization.service import DataNormalizationService
 from src.services.raw_upload_service import RawUploadService
+from services.insights.jobs import refresh_insights_for_tenant
 
 router = APIRouter(prefix="/api/v1/data", tags=["v1-data"])
 logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ logger = logging.getLogger(__name__)
 )
 async def import_data(
     request: Request,
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     context: AuthContext = Depends(require_auth_context),
     repository: SQLAlchemyCommerceRepository = Depends(commerce_repository),
@@ -135,6 +137,14 @@ async def import_data(
         record["accepted_rows"],
         record["rejected_rows"],
         request.state.request_id,
+    )
+    background_tasks.add_task(
+        refresh_insights_for_tenant,
+        context.tenant_id,
+        shop_id=context.shop_id,
+        database=request.app.state.database,
+        repository=repository,
+        llm_client=request.app.state.llm_client,
     )
     return DataImportResponse(data=ImportData(**record), meta=meta(request))
 

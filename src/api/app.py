@@ -82,7 +82,7 @@ def create_app() -> FastAPI:
         CORSMiddleware,
         allow_origins=settings.ALLOWED_ORIGINS,
         allow_credentials=False,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "PATCH", "OPTIONS"],
         allow_headers=[
             "Content-Type",
             "Authorization",
@@ -167,8 +167,9 @@ def create_app() -> FastAPI:
             name="demo",
         )
 
-    from src.api.routes import legacy, v1
+    from src.api.routes import insights, legacy, v1
 
+    app.include_router(insights.router)
     app.include_router(v1.router)
     app.include_router(legacy.router)
     return app
