@@ -1,0 +1,20 @@
+{
+  "full_shop": {
+    "order_count": 39,
+    "revenue": 12225988,
+    "profit": 8884161,
+    "expenses": 3091827,
+    "channels": ["Shopee", "TikTok Shop", "Facebook Shop"],
+    "investment_capital": 100000000
+  },
+  "low_data_shop": {
+    "order_count": 2,
+    "revenue": 350000,
+    "channels": ["Lazada"]
+  },
+  "empty_shop": {
+    "order_count": 0,
+    "revenue": 0,
+    "channels": []
+  }
+}
