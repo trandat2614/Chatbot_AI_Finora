@@ -2,8 +2,6 @@
 
 ## Kiến trúc
 
-Pipeline được tách thành các lớp để backend có thể đổi nguồn dữ liệu mà không sửa logic insight:
-
 1. `services/insights/data_provider.py`: chuẩn hóa order, expense và cấu hình shop qua `InsightDataProvider`.
 2. `services/insights/metrics.py`: tính chỉ số kỳ hiện tại/kỳ trước, kênh, sản phẩm, xu hướng tháng và hòa vốn; không gọi LLM.
 3. `services/insights/rules.py`: phát hiện candidate bằng tỷ lệ và ngưỡng cấu hình, mọi kết luận đều có `evidence`.

@@ -51,8 +51,12 @@ def get_identity(
     service_key: str | None = Header(default=None, alias="X-Finora-Service-Key"),
     x_api_key: str | None = Header(default=None, alias="X-API-Key"),
 ) -> Identity:
+    # Dashboard polling and generation share this authentication dependency.
+    # Insights remain authenticated but do not consume shared rate-limit buckets.
+    path = request.url.path
+    is_insights_request = path == "/api/insights" or path.startswith("/api/insights/")
     client_ip = request.client.host if request.client else "unknown"
-    if not auth_rate_limiter.allow(client_ip):
+    if not is_insights_request and not auth_rate_limiter.allow(client_ip):
         audit_event("authentication", None, outcome="rate_limited")
         raise _http_error(429, "AUTH_RATE_LIMITED", "Quá nhiều lần xác thực.")
 
@@ -75,7 +79,7 @@ def get_identity(
         )
 
     limiter_identity = f"{identity.audit_tenant}:{client_ip}"
-    if not rate_limiter.allow(limiter_identity):
+    if not is_insights_request and not rate_limiter.allow(limiter_identity):
         audit_event("rate_limit", identity, outcome="denied")
         raise _http_error(429, "RATE_LIMITED", "Quá nhiều yêu cầu.")
     audit_event("authentication", identity)

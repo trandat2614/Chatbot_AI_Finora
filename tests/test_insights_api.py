@@ -240,3 +240,52 @@ def test_insights_require_authentication(insights_client) -> None:
     client, _ = insights_client
     response = client.get("/api/insights")
     assert response.status_code == 401
+
+
+def test_insights_bypass_exhausted_shared_limits(insights_client, monkeypatch) -> None:
+    client, llm = insights_client
+    monkeypatch.setattr(auth_rate_limiter, "limit", 1)
+    monkeypatch.setattr(rate_limiter, "limit", 1)
+    assert auth_rate_limiter.allow("testclient")
+    context = AuthContext("user-tenant-a", "tenant-a", "shop-a", "owner")
+    assert rate_limiter.allow(f"{context.audit_tenant}:testclient")
+    headers = _headers("tenant-a", "shop-a")
+
+    for _ in range(3):
+        generated = client.post(
+            "/api/insights/generate", headers=headers, json={"period": "30d"}
+        )
+        assert generated.status_code == 200, generated.text
+        insight_id = generated.json()["items"][0]["id"]
+        listed = client.get("/api/insights?status=new", headers=headers)
+        assert listed.status_code == 200, listed.text
+        updated = client.patch(
+            f"/api/insights/{insight_id}", headers=headers, json={"status": "read"}
+        )
+        assert updated.status_code == 200, updated.text
+
+    assert llm.calls == 1
+    assert client.get("/api/insights").status_code == 401
+    invalid_headers = {**headers, "X-Finora-Service-Key": "invalid"}
+    assert client.get("/api/insights", headers=invalid_headers).status_code == 401
+
+    # The same exhausted buckets continue to protect other authenticated APIs.
+    blocked = client.post("/api/v1/chat", headers=headers, json={"message": "hello"})
+    assert blocked.status_code == 429
+    assert blocked.json()["error"]["code"] == "AUTH_RATE_LIMITED"
+    auth_rate_limiter._requests.clear()
+    blocked = client.post("/api/v1/chat", headers=headers, json={"message": "hello"})
+    assert blocked.status_code == 429
+    assert blocked.json()["error"]["code"] == "RATE_LIMITED"
+
+
+def test_insights_do_not_consume_shared_limits(insights_client, monkeypatch) -> None:
+    client, _ = insights_client
+    monkeypatch.setattr(auth_rate_limiter, "limit", 1)
+    monkeypatch.setattr(rate_limiter, "limit", 1)
+    headers = _headers("tenant-a", "shop-a")
+    for _ in range(3):
+        response = client.get("/api/insights", headers=headers)
+        assert response.status_code == 200, response.text
+    assert not auth_rate_limiter._requests
+    assert not rate_limiter._requests
