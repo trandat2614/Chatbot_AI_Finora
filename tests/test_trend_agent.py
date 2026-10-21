@@ -1,58 +1,12 @@
-"""Offline tests for the Shopee trend loader, tools, and chatbot integration."""
+"""Offline tests for request-scoped trend JSON and adaptive chat context."""
 from __future__ import annotations
 
 import json
-import sqlite3
-from pathlib import Path
-
-import pandas as pd
 
 from services.advisor_service import AdvisorService
 from src.agent.prompt import ADAPTIVE_RESPONSE_INSTRUCTION
 from src.agent.workflow import RESPONSE_TEMPERATURE, TREND_TOOL_REGISTRY, TrendAgentWorkflow
-from src.services.trend_service import TrendDataLoader
-from src.tools.trend_tools import compare_shop_product_with_trends
-
-
-DATA_DIR = Path(__file__).resolve().parents[1] / "data" / "trends"
-
-
-def test_loader_parses_all_sample_csvs_and_builds_database(tmp_path: Path) -> None:
-    database_path = tmp_path / "trends.sqlite3"
-    loader = TrendDataLoader(DATA_DIR, database_path)
-
-    assert len(loader.loaded_files) >= 5
-    assert len(loader.data) >= 500
-    assert set(loader.data["gender"]) == {"nam", "nu"}
-    assert set(loader.data["timeframe"]) == {"today", "7d", "30d"}
-    assert pd.api.types.is_integer_dtype(loader.data["Giá"])
-    assert pd.api.types.is_integer_dtype(loader.data["Lượt bán tăng"])
-    assert pd.api.types.is_integer_dtype(loader.data["Đã bán 30 ngày"])
-    assert pd.api.types.is_float_dtype(loader.data["Hoa hồng %"])
-    assert pd.api.types.is_bool_dtype(loader.data["Shop Mall"])
-
-    with sqlite3.connect(database_path) as connection:
-        database_count = connection.execute("SELECT COUNT(*) FROM trends").fetchone()[0]
-    assert database_count == len(loader.data)
-
-
-def test_compare_product_tool_returns_financial_gap_analysis() -> None:
-    payload = json.loads(
-        compare_shop_product_with_trends.invoke(
-            {
-                "product_name": "Áo thun form rộng 100% cotton",
-                "current_price": 120_000,
-                "cogs": 60_000,
-                "affiliate_rate": 5,
-                "category": "nam",
-            }
-        )
-    )
-
-    assert payload["market_benchmark"]["median_price"] > 0
-    assert payload["gap_analysis"]["price_gap"] is not None
-    assert len(payload["profit_margin_check"]["current_price_scenarios"]) == 2
-    assert payload["similar_products"]
+from tests.test_product_trends import export
 
 
 class _EchoLLM:
@@ -74,24 +28,22 @@ class _EchoLLM:
         return user_message
 
 
-def test_agent_response_contains_metrics_extracted_from_csv() -> None:
+def test_agent_uses_only_backend_json_given_for_current_turn() -> None:
     workflow = TrendAgentWorkflow()
-    context = workflow.build_context("Xu hướng áo nam Shopee 7 ngày là gì?")
-    trend_payload = json.loads(context.split("\n", 1)[1])
-    expected_median = trend_payload["metrics"]["median_price"]
-
+    context = workflow.build_context("Xu hướng hôm nay", trend_data=export())
+    assert "backend_reported_snapshot" in context
+    assert '"medianPrice": 250000' in context
+    assert TREND_TOOL_REGISTRY == {}
     llm = _EchoLLM()
-    advisor = AdvisorService(llm_client=llm)
-    response = advisor.answer("Xu hướng áo nam Shopee 7 ngày là gì?")
-
-    assert str(expected_median) in response.answer
-    assert "average_affiliate_rate" in response.answer
-    assert "Cố vấn Tài chính & Kinh doanh E-commerce" in llm.last_system_prompt
+    response = AdvisorService(llm_client=llm).answer("Xu hướng hôm nay", trend_data=export())
+    assert "250000" in response.answer
     assert llm.last_temperature == RESPONSE_TEMPERATURE
-    assert set(TREND_TOOL_REGISTRY) == {
-        "get_shopee_fashion_trends",
-        "compare_shop_product_with_trends",
-    }
+
+
+def test_agent_missing_backend_json_reports_no_local_fallback() -> None:
+    context = TrendAgentWorkflow().build_context("Xu hướng hôm nay")
+    assert "INSUFFICIENT_DATA" in context
+    assert "trend_data" in context
 
 
 def test_adaptive_context_combines_rag_history_and_response_mode() -> None:

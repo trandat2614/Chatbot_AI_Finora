@@ -4,7 +4,7 @@ from __future__ import annotations
 import re
 from enum import Enum
 
-from src.services.trend_service import fold_text
+from utils.text import fold_text
 
 
 class Intent(str, Enum):
@@ -51,6 +51,14 @@ class IntentRouter:
         folded = fold_text(question)
         if self.is_order_lookup(question):
             return Intent.ORDER_LOOKUP
+        # Explicit market questions take priority over generic sales/SKU wording.
+        if any(term in folded for term in ("xu huong", "trend", "thi truong", "bestseller")):
+            return Intent.MARKET_TREND
+        from src.services.product_trend_service import infer_category
+        if infer_category(question) and any(term in folded for term in (
+            "hoa hong", "ban tang", "xep hang", "ban chay", "gia", "top", "san pham", "insight",
+        )):
+            return Intent.MARKET_TREND
         if any(term in folded for term in self.STATISTICS_TERMS):
             return Intent.ORDER_STATISTICS
         matches = [intent for intent, terms in self.RULES if any(term in folded for term in terms)]

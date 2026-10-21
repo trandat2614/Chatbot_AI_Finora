@@ -5,7 +5,6 @@ import pandas as pd
 
 from src.db.session import Database
 from src.repositories.commerce_repository import SQLAlchemyCommerceRepository
-from src.repositories.trend_repository import SQLAlchemyTrendRepository
 from src.security.auth import AuthContext
 from src.services.metric_service import MetricService
 
@@ -89,34 +88,4 @@ def test_repository_uses_bound_parameters_for_hostile_scope(tmp_path) -> None:
 
     assert len(repository.load_orders(hostile_tenant, "shop-a")) == 2
     assert repository.load_orders("tenant-a", "shop-a").empty
-    database.dispose()
-
-
-def test_trend_snapshots_are_persistent_and_append_only(tmp_path) -> None:
-    database = Database(f"sqlite:///{tmp_path / 'trends.db'}")
-    database.create_schema()
-    repository = SQLAlchemyTrendRepository(database)
-    snapshot = {
-        "snapshot_id": "snapshot-20260930-product-1",
-        "capture_date": "2026-09-30T00:00:00+00:00",
-        "platform": "shopee",
-        "category": "nam",
-        "period": "7d",
-        "product_id": "product-1",
-        "product_name": "Áo cotton",
-        "shop_name": "Public shop",
-        "rank": 1,
-        "price": 100_000,
-        "sales_growth": 25,
-        "sales_30d": 100,
-        "rating": 4.8,
-        "source_url": "https://example.invalid/product-1",
-    }
-
-    assert repository.upsert_snapshots([snapshot]) == 1
-    assert repository.upsert_snapshots([snapshot]) == 0
-    stored = repository.list_snapshots("nam", "7d")
-    assert len(stored) == 1
-    assert stored[0]["snapshot_id"] == snapshot["snapshot_id"]
-    assert stored[0]["capture_date"].date().isoformat() == "2026-09-30"
     database.dispose()

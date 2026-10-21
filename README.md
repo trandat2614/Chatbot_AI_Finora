@@ -64,10 +64,10 @@ JWT phải có `user_id`, `tenant_id`, `shop_id`, `role`, `iss`, `aud`, `exp`. A
 | `GET` | `/api/v1/products` | Danh sách SKU |
 | `GET` | `/api/v1/products/{sku}` | Chi tiết SKU |
 | `GET` | `/api/v1/products/{sku}/analysis` | Product Doctor |
-| `GET` | `/api/v1/market/trends` | Trend snapshots |
+| `POST` | `/api/v1/market/product-trends/insights` | Tóm tắt JSON xu hướng từ BE web |
 | `GET` | `/api/v1/opportunities` | Opportunity matching |
 | `GET` | `/api/v1/action-plan` | Action plan khuyến nghị |
-| `POST` | `/api/v1/chat` | Chat với context lấy server-side |
+| `POST` | `/api/v1/chat` | Chat với dữ liệu shop và `trend_data` JSON do BE web gửi |
 | `POST` | `/api/v1/sales-plan` | Sales plan khuyến nghị |
 | `POST` | `/api/v1/communication-plan` | Communication plan khuyến nghị |
 | `POST` | `/api/v1/knowledge/upload` | Private RAG của shop |
@@ -103,6 +103,7 @@ Container chạy non-root và tự thực hiện `alembic upgrade head` trước
 
 ## Tài liệu
 
+- [Insight và chatbot xu hướng sản phẩm: 9 ngành, 3 kỳ](docs/PRODUCT_TRENDS.md)
 - [Kiểm thử local](docs/LOCAL_TESTING.md)
 - [Contract cho Finora Node backend](docs/WEB_INTEGRATION.md)
 - [Chuẩn bị VPS staging](docs/VPS_DEPLOYMENT.md)

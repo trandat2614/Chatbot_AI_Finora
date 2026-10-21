@@ -114,10 +114,10 @@ Không tự đặt `Content-Type` cho `FormData`; runtime phải tự tạo mult
 | `GET` | `/api/v1/products` | không có body |
 | `GET` | `/api/v1/products/{sku}` | URL-encoded SKU |
 | `GET` | `/api/v1/products/{sku}/analysis` | URL-encoded SKU |
-| `GET` | `/api/v1/market/trends` | `category=nam|nu`, `period=today|7d|30d`, `historical=bool` |
+| `POST` | `/api/v1/market/product-trends/insights` | Nguyên JSON `{success,data}` từ API xu hướng BE web |
 | `GET` | `/api/v1/opportunities` | `category`, `period` |
 | `GET` | `/api/v1/action-plan` | `category`, `period` |
-| `POST` | `/api/v1/chat` | `ChatRequest` |
+| `POST` | `/api/v1/chat` | `ChatRequest`; gửi thêm `trend_data` JSON BE cho câu hỏi xu hướng |
 | `POST` | `/api/v1/sales-plan` | `PlannerRequest` |
 | `POST` | `/api/v1/communication-plan` | `PlannerRequest` |
 | `POST` | `/api/v1/knowledge/upload` | multipart field `file` |
@@ -146,6 +146,10 @@ Error:
 ```
 
 Không đổi `INSUFFICIENT_DATA` thành số `0`; UI phải thể hiện thiếu dữ liệu.
+
+Dữ liệu xu hướng thuộc BE web. AI Server không đọc CSV hay lưu snapshot; BE gửi
+JSON đúng kỳ/ngành theo mỗi request. Xem [ví dụ insight và chatbot](PRODUCT_TRENDS.md).
+GET `/api/v1/market/trends` cũ đã deprecated, không cung cấp dữ liệu cục bộ.
 
 ## Import file
 

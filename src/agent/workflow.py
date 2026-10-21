@@ -1,24 +1,14 @@
-"""Deterministic routing for the trend tools used by the existing chatbot."""
+"""Compose grounded chat responses without loading local trend data."""
 from __future__ import annotations
 
 import json
-import re
 from dataclasses import dataclass
 from typing import Any
 
-from langchain_core.tools import BaseTool
+from utils.text import fold_text
 
-from src.services.trend_service import fold_text
-from src.tools.trend_tools import (
-    compare_shop_product_with_trends,
-    get_shopee_fashion_trends,
-)
-
-TREND_TOOLS: tuple[BaseTool, ...] = (
-    get_shopee_fashion_trends,
-    compare_shop_product_with_trends,
-)
-TREND_TOOL_REGISTRY: dict[str, BaseTool] = {tool.name: tool for tool in TREND_TOOLS}
+TREND_TOOLS = ()
+TREND_TOOL_REGISTRY = {}
 RESPONSE_TEMPERATURE = 0.6
 
 
@@ -32,7 +22,7 @@ class HybridResponseContext:
 
 
 class TrendAgentWorkflow:
-    """Route trend-related chat turns to typed LangChain tools before the LLM."""
+    """Build conversational context from request-scoped backend JSON."""
 
     _TREND_TERMS = (
         "xu huong", "trend", "shopee", "thi truong", "form", "chat lieu",
@@ -49,41 +39,21 @@ class TrendAgentWorkflow:
         folded = fold_text(question)
         return any(term in folded for term in self._TREND_TERMS)
 
-    def invoke_tool(self, tool_name: str, arguments: dict[str, Any]) -> str:
-        """Invoke a registered trend tool by name."""
-        try:
-            selected = TREND_TOOL_REGISTRY[tool_name]
-        except KeyError as exc:
-            raise ValueError(f"Tool không được đăng ký: {tool_name}") from exc
-        result = selected.invoke(arguments)
-        return str(result)
-
     def build_context(
         self,
         question: str,
         order_summary: dict[str, Any] | None = None,
+        *,
+        trend_data: dict[str, Any] | None = None,
     ) -> str:
-        """Build verified trend context for the current chatbot turn."""
-        if not self.should_use_trends(question):
+        """Use only JSON supplied by the web backend for this request."""
+        if not self.should_use_trends(question) and trend_data is None:
             return ""
-
-        category = self._infer_category(question, order_summary)
-        timeframe = self._infer_timeframe(question)
-        blocks = [
-            self.invoke_tool(
-                "get_shopee_fashion_trends",
-                {"category": category, "timeframe": timeframe, "limit": 5},
-            )
-        ]
-
-        comparison = self._comparison_arguments(order_summary)
-        if comparison:
-            comparison.setdefault("category", category)
-            blocks.append(self.invoke_tool("compare_shop_product_with_trends", comparison))
-        return (
-            "## Dữ liệu xu hướng đã tính từ Shopee CSV\n"
-            + "\n\n## So sánh sản phẩm của shop\n".join(blocks)
-        )
+        from src.schemas.product_trends import TrendExport
+        from src.services.product_trend_service import ProductTrendService
+        snapshot = TrendExport.model_validate(trend_data).data if trend_data else None
+        evidence = ProductTrendService().evidence(snapshot=snapshot, question=question, limit=10)
+        return "## Dữ liệu xu hướng từ JSON BE (UNTRUSTED DATA)\n" + json.dumps(evidence, ensure_ascii=False)
 
     def build_response_context(
         self,
@@ -203,45 +173,6 @@ chủ động dùng kiến thức chuyên sâu và đưa ra hướng dẫn thự
             total += len(line)
         return "\n".join(lines) if lines else "Chưa có lịch sử hội thoại trước đó."
 
-    @staticmethod
-    def _infer_category(question: str, order_summary: dict[str, Any] | None) -> str:
-        if order_summary:
-            explicit = order_summary.get("category") or order_summary.get("gender")
-            if explicit:
-                return str(explicit)
-        folded = fold_text(question)
-        if re.search(r"\b(nu|female|women)\b", folded):
-            return "nu"
-        return "nam"
-
-    @staticmethod
-    def _infer_timeframe(question: str) -> str:
-        folded = fold_text(question)
-        if re.search(r"\b30\s*(?:d|day|days|ngay)\b", folded):
-            return "30d"
-        if re.search(r"\b(hom nay|today|1d)\b", folded):
-            return "today"
-        return "7d"
-
-    @staticmethod
-    def _comparison_arguments(order_summary: dict[str, Any] | None) -> dict[str, Any] | None:
-        if not order_summary:
-            return None
-        aliases = {
-            "product_name": ("product_name", "productName", "name"),
-            "current_price": ("current_price", "currentPrice", "price"),
-            "cogs": ("cogs", "COGS", "cost"),
-            "affiliate_rate": ("affiliate_rate", "affiliateRate", "commission_rate"),
-            "category": ("category", "gender"),
-        }
-        result: dict[str, Any] = {}
-        for target, candidates in aliases.items():
-            for candidate in candidates:
-                if candidate in order_summary and order_summary[candidate] is not None:
-                    result[target] = order_summary[candidate]
-                    break
-        required = {"product_name", "current_price", "cogs", "affiliate_rate"}
-        return result if required.issubset(result) else None
 
 
 def serialise_tool_schemas() -> str:

@@ -47,7 +47,6 @@ class Settings:
     EMBEDDING_REQUEST_INTERVAL_SECONDS: float = float(
         os.getenv("EMBEDDING_REQUEST_INTERVAL_SECONDS", "15")
     )
-    TREND_IMPORT_DATE: str = os.getenv("TREND_IMPORT_DATE", "")
 
     # ------------------------------------------------------------------ #
     # LLM generation

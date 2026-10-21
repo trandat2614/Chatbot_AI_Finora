@@ -10,7 +10,7 @@ from src.schemas.commerce import AnalysisStatus
 from src.services.fashion_nlp_service import FashionNLPService
 from src.services.metric_service import MetricService
 from src.services.product_doctor_service import ProductDoctorService
-from src.services.trend_service import fold_text
+from utils.text import fold_text
 
 
 def _tokens(value: str) -> Counter[str]:

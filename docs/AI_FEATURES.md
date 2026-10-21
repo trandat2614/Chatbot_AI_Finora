@@ -53,7 +53,7 @@ Các bảng: `shops`, `data_imports`, `orders`, `order_items`, `products`, `mark
 - `RevenueLeakageService`: deterministic GMV-to-net bridge.
 - `BusinessHealthService`: cảnh báo cancellation, refund, discount dependency, revenue drop và fee increase.
 - `ProductDoctorService`: `SCALE`, `PUSH`, `TEST`, `MONITOR`, `FIX`, `REDUCE`.
-- `MarketTrendService`: lưu snapshot lịch sử bất biến trong relational database.
+- `MarketTrendService`: phân tích JSON xu hướng do BE web gửi theo request; không đọc CSV hoặc lưu snapshot ở AI Server. Xem [contract kết nối](PRODUCT_TRENDS.md).
 - `OpportunityMatchingService`: kết hợp market/shop metrics, confidence, evidence và `missing_metrics`.
 - `ActionPlanService`: tạo các action ưu tiên; `expected_impact=null` nếu backend không tính chắc chắn.
 - Sales/Communication planners: tạo khuyến nghị có cấu trúc, không thực thi bên ngoài.

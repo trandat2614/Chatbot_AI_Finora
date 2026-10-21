@@ -87,6 +87,7 @@ class AdvisorService:
         order_summary: Optional[dict] = None,
         history: Optional[list[dict[str, str]]] = None,
         correlation_id: str | None = None,
+        trend_data: dict | None = None,
     ) -> AdvisorResponse:
         """Generate an AI-powered business advisory response.
 
@@ -183,7 +184,7 @@ class AdvisorService:
                     + json.dumps(sanitize_for_ai(tool_result, block_prompt_injection=True), ensure_ascii=False, indent=2)
                 )
             else:
-                trend_context = self._trend_workflow.build_context(question, order_summary)
+                trend_context = self._trend_workflow.build_context(question, order_summary, trend_data=trend_data)
         except Exception as exc:
             logger.warning("Decision/trend tool failed: %s", type(exc).__name__)
             warnings.append("Không thể truy vấn dữ liệu phân tích nội bộ.")
@@ -361,7 +362,7 @@ class AdvisorService:
 
     @staticmethod
     def _fold(value: str) -> str:
-        from src.services.trend_service import fold_text
+        from utils.text import fold_text
 
         return fold_text(value)
 

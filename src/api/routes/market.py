@@ -9,7 +9,6 @@ from src.api.dependencies.context import require_auth_context
 from src.api.dependencies.services import commerce_repository
 from src.api.routes.common import meta
 from src.repositories.commerce_repository import SQLAlchemyCommerceRepository
-from src.repositories.trend_repository import SQLAlchemyTrendRepository
 from src.schemas.api import (
     ActionPlanData,
     ActionPlanResponse,
@@ -27,20 +26,17 @@ from src.services.metric_service import MetricService
 from src.services.opportunity_matching_service import OpportunityMatchingService
 from src.services.product_doctor_service import ProductDoctorService
 from src.services.revenue_leakage_service import RevenueLeakageService
-from src.tools.trend_tools import get_trend_loader
 
 router = APIRouter(prefix="/api/v1", tags=["v1-market"])
 
 
 def _market(request: Request, category: str, period: str, historical: bool = False) -> dict:
-    return MarketTrendService(
-        get_trend_loader(), SQLAlchemyTrendRepository(request.app.state.database)
-    ).get_trends(
+    return MarketTrendService().get_trends(
         category, period, historical=historical
     )
 
 
-@router.get("/market/trends", response_model=MarketTrendResponse)
+@router.get("/market/trends", response_model=MarketTrendResponse, deprecated=True)
 def market_trends(
     request: Request,
     category: Literal["nam", "nu"] = "nam",

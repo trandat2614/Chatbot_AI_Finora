@@ -45,7 +45,7 @@ finora-ai-business-advisor/
 
 - Migration: `alembic.ini`, `migrations/env.py`, `migrations/script.py.mako`, `migrations/versions/20260930_0001_initial_schema.py`.
 - API: `src/api/app.py`, dependencies và route modules `business`, `chat`, `data`, `knowledge`, `legacy`, `market`, `planning`, `products`, `v1`.
-- Persistence: `src/db/*`; `src/repositories/interfaces.py`, `commerce_repository.py`, `trend_repository.py`, `recommendation_repository.py`, `audit_repository.py`.
+- Persistence: `src/db/*`; `src/repositories/interfaces.py`, `commerce_repository.py`, `recommendation_repository.py`, `audit_repository.py`. Dữ liệu xu hướng do BE web sở hữu và gửi qua JSON, không lưu ở AI Server.
 - Contracts/security: `src/schemas/*`; `src/security/auth.py`, `audit.py`, `privacy.py`, `uploads.py`.
 - Services: marketplace adapters dưới `src/services/normalization/`; Decision Intelligence services, `raw_upload_service.py`, `tenant_store.py`, `src/tools/business_tools.py`, `src/agent/intent_router.py`.
 - Tests: `test_api_v1.py`, `test_data_normalization.py`, `test_decision_intelligence.py`, `test_marketplace_adapters.py`, `test_repositories.py`, `test_security.py`, `test_web_auth.py`.
@@ -53,13 +53,13 @@ finora-ai-business-advisor/
 
 ## 4. Files modified
 
-`.dockerignore`, `.env.example`, `.gitignore`, `Dockerfile`, `README.md`, `requirements.txt`, `docker-compose.yml`, `deploy/nginx-finora.conf`, `config/settings.py`, `server.py`, `core/llm_client.py`, `services/advisor_service.py`, `rag/document_loader.py`, `rag/rag_service.py`, `rag/retriever.py`, `src/agent/prompt.py`, `src/services/trend_service.py`, `tools/revenue_analysis_tool.py`, `web/index.html`, các docs local/VPS và compatibility tests.
+`.dockerignore`, `.env.example`, `.gitignore`, `Dockerfile`, `README.md`, `requirements.txt`, `docker-compose.yml`, `deploy/nginx-finora.conf`, `config/settings.py`, `server.py`, `core/llm_client.py`, `services/advisor_service.py`, `rag/document_loader.py`, `rag/rag_service.py`, `rag/retriever.py`, `src/agent/prompt.py`, `tools/revenue_analysis_tool.py`, `web/index.html`, các docs local/VPS và compatibility tests.
 
-Generated/sensitive artifacts `knowledge/Shopee.xlsx` và `vector_db/chroma.sqlite3` đã được bỏ khỏi Git index trong worktree hiện tại. `data/trends/shopee_trends.sqlite3` đang có thay đổi generated data và phải được review riêng trước commit.
+Generated/sensitive artifacts `knowledge/Shopee.xlsx` và `vector_db/chroma.sqlite3` đã được bỏ khỏi Git index trong worktree hiện tại. Thư mục dữ liệu xu hướng cùng CSV/SQLite và loader cũ đã được gỡ; xem [contract JSON từ BE](PRODUCT_TRENDS.md).
 
 ## 5. Database schema
 
-Tables: `shops`, `data_imports`, `orders`, `order_items`, `products`, `market_trend_snapshots`, `recommendations`, `recommendation_results`, `conversations`, `audit_events`.
+Tables: `shops`, `data_imports`, `orders`, `order_items`, `products`, `recommendations`, `recommendation_results`, `conversations`, `audit_events`. Xu hướng không tạo bảng lưu snapshot mới ở AI Server.
 
 Order-level money: `order_total`, `platform_fee`, `transaction_fee`, `service_fee`, `shipping_fee`, `refund_amount`. Item-level money: `original_price`, `selling_price`, `seller_discount`, `platform_discount`. Tenant-private tables carry tenant/shop ownership and repository queries use SQLAlchemy bound parameters.
 
@@ -111,7 +111,7 @@ See `docs/WEB_INTEGRATION.md` for JWT signing, shared HTTP client, import/chat e
 
 ## 12. New environment variables
 
-`DATABASE_URL`, `AUTO_CREATE_SCHEMA`, `POSTGRES_PASSWORD`, `WEB_TOKEN_SECRET`, `WEB_TOKEN_ISSUER`, `WEB_TOKEN_AUDIENCE`, `WEB_TOKEN_ALGORITHM`, `WEB_TOKEN_LEEWAY_SECONDS`, `FINORA_SERVICE_KEY`, `ENABLE_LEGACY_API_KEY`, `DEFAULT_SHOP_ID`, `PII_HASH_SECRET`, `RAW_UPLOAD_RETENTION_HOURS`, `RAW_UPLOAD_DIR`, `TENANT_DATA_DIR`, `AUDIT_LOG_FILE`, `TREND_IMPORT_DATE`.
+`DATABASE_URL`, `AUTO_CREATE_SCHEMA`, `POSTGRES_PASSWORD`, `WEB_TOKEN_SECRET`, `WEB_TOKEN_ISSUER`, `WEB_TOKEN_AUDIENCE`, `WEB_TOKEN_ALGORITHM`, `WEB_TOKEN_LEEWAY_SECONDS`, `FINORA_SERVICE_KEY`, `ENABLE_LEGACY_API_KEY`, `DEFAULT_SHOP_ID`, `PII_HASH_SECRET`, `RAW_UPLOAD_RETENTION_HOURS`, `RAW_UPLOAD_DIR`, `TENANT_DATA_DIR`, `AUDIT_LOG_FILE`.
 
 ## 13. Dependencies and test result
 

@@ -1,10 +1,13 @@
 """Strict public /api/v1 request and response contracts."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import Field
+
+from src.schemas.base import APIModel, ResponseMeta
+from src.schemas.product_trends import TrendExport
 
 from src.schemas.commerce import (
     ActionItem,
@@ -12,14 +15,6 @@ from src.schemas.commerce import (
     BusinessAlert,
     MetricResult,
 )
-
-
-class APIModel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-
-
-class ResponseMeta(APIModel):
-    request_id: str
 
 
 class ErrorDetail(APIModel):
@@ -238,12 +233,12 @@ class MarketTrendItem(APIModel):
     platform: str
     category: str
     period: str
-    rank: int
+    rank: int | None = None
     product_name: str
     shop: str
-    price: float
-    sales_growth: float
-    sales_30d: int
+    price: float | None = None
+    sales_growth: float | None = None
+    sales_30d: int | None = None
     rating: float | str | None = None
     url: str
     trend_state: str
@@ -331,7 +326,10 @@ class ChatRequest(APIModel):
     message: str = Field(min_length=1, max_length=10_000)
     history: list[HistoryMessage] = Field(default_factory=list)
     period: Literal["today", "7d", "30d"] | None = None
-    category: Literal["nam", "nu"] | None = None
+    category: str | None = Field(default=None, max_length=100)
+    snapshot_date: date | None = None
+    product_query: str = Field(default="", max_length=300)
+    trend_data: TrendExport | None = None
     platform: Literal["shopee", "tiktok_shop", "lazada"] | None = None
 
 

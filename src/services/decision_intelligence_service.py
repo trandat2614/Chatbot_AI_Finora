@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import pandas as pd
 
-from src.repositories.trend_repository import SQLAlchemyTrendRepository
+from src.schemas.product_trends import TrendExportData
 from src.services.action_plan_service import ActionPlanService
 from src.services.business_health_service import BusinessHealthService
 from src.services.communication_planner_service import CommunicationPlannerService
@@ -15,11 +15,10 @@ from src.services.product_doctor_service import ProductDoctorService
 from src.services.revenue_leakage_service import RevenueLeakageService
 from src.services.sales_planner_service import SalesPlannerService
 from src.services.tenant_store import TenantDataStore
-from src.tools.trend_tools import get_trend_loader
 
 
 class DecisionIntelligenceService:
-    def __init__(self, tenant_id: str, shop_id: str, store: TenantDataStore | None = None) -> None:
+    def __init__(self, tenant_id: str, shop_id: str, store: TenantDataStore | None = None, *, trend_data: TrendExportData | None = None) -> None:
         self.tenant_id = tenant_id
         self.shop_id = shop_id
         self.store = store or TenantDataStore()
@@ -28,12 +27,7 @@ class DecisionIntelligenceService:
         self.health_service = BusinessHealthService()
         self.leakage_service = RevenueLeakageService()
         self.product_service = ProductDoctorService()
-        trend_repository = (
-            SQLAlchemyTrendRepository(store.database)
-            if store is not None and hasattr(store, "database")
-            else None
-        )
-        self.market_service = MarketTrendService(get_trend_loader(), trend_repository)
+        self.market_service = MarketTrendService(snapshot=trend_data)
         self.opportunity_service = OpportunityMatchingService()
         self.action_service = ActionPlanService()
         self.sales_service = SalesPlannerService()

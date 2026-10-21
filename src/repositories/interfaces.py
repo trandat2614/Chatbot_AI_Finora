@@ -47,12 +47,6 @@ class ProductRepository(Protocol):
     def get_product(self, tenant_id: str, shop_id: str, sku: str) -> dict | None: ...
 
 
-class TrendRepository(Protocol):
-    def upsert_snapshots(self, snapshots: list[dict]) -> int: ...
-
-    def list_snapshots(self, category: str, period: str, limit: int = 100) -> list[dict]: ...
-
-
 class RecommendationRepository(Protocol):
     def save(
         self, context: AuthContext, kind: str, request_data: dict, result_data: dict

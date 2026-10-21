@@ -145,31 +145,6 @@ class Product(Base):
     )
 
 
-class MarketTrendSnapshot(Base):
-    __tablename__ = "market_trend_snapshots"
-    __table_args__ = (
-        UniqueConstraint("snapshot_id", name="uq_market_snapshot"),
-        Index("ix_market_trend_lookup", "platform", "category", "period", "capture_date"),
-    )
-
-    id: Mapped[str] = mapped_column(String(36), primary_key=True)
-    snapshot_id: Mapped[str] = mapped_column(String(64), nullable=False)
-    capture_date: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
-    platform: Mapped[str] = mapped_column(String(50), nullable=False)
-    category: Mapped[str] = mapped_column(String(100), nullable=False)
-    period: Mapped[str] = mapped_column(String(20), nullable=False)
-    product_id: Mapped[str | None] = mapped_column(String(200))
-    product_name: Mapped[str] = mapped_column(String(1000), nullable=False)
-    shop_name: Mapped[str | None] = mapped_column(String(500))
-    rank: Mapped[int | None] = mapped_column(Integer)
-    price: Mapped[float | None] = mapped_column(Float)
-    sales_growth: Mapped[float | None] = mapped_column(Float)
-    sales_30d: Mapped[int | None] = mapped_column(Integer)
-    rating: Mapped[float | None] = mapped_column(Float)
-    source_url: Mapped[str | None] = mapped_column(Text)
-    imported_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
-
-
 class Recommendation(Base):
     __tablename__ = "recommendations"
     __table_args__ = (Index("ix_recommendation_owner", "tenant_id", "shop_id", "created_at"),)
