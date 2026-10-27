@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import pandas as pd
+from sqlalchemy import select
 
 from src.db.session import Database
+from src.db.models import Product
 from src.repositories.commerce_repository import SQLAlchemyCommerceRepository
 from src.security.auth import AuthContext
 from src.services.metric_service import MetricService
@@ -75,6 +77,33 @@ def test_repository_preserves_leading_zero_order_id(tmp_path) -> None:
 
     match = repository.get_orders_by_external_id("tenant-a", "shop-a", "001234567890")
     assert match[0]["order_id"] == "001234567890"
+    database.dispose()
+
+
+def test_repository_reuses_product_for_repeated_sku_across_imported_rows(tmp_path) -> None:
+    database = Database(f"sqlite:///{tmp_path / 'repeated-sku.db'}")
+    database.create_schema()
+    repository = SQLAlchemyCommerceRepository(database)
+    context = AuthContext("user-a", "tenant-a", "shop-a", "owner")
+    value = frame()
+    value["order_id"] = ["order-1", "order-1"]
+    value["seller_sku"] = "shared-sku"
+    value["product_id"] = "shared-product"
+
+    accepted = repository.replace_orders(context, value)
+
+    assert accepted == 2
+    orders = repository.load_orders("tenant-a", "shop-a")
+    assert len(orders) == 2
+    with database.session() as session:
+        products = session.scalars(
+            select(Product).where(
+                Product.tenant_id == "tenant-a",
+                Product.shop_id == "shop-a",
+                Product.sku == "shared-sku",
+            )
+        ).all()
+    assert len(products) == 1
     database.dispose()
 
 
