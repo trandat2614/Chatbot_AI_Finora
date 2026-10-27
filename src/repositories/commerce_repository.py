@@ -15,6 +15,7 @@ from src.db.session import Database, get_database
 from src.security.auth import AuthContext
 
 logger = logging.getLogger(__name__)
+PRODUCT_LOOKUP_CHUNK_SIZE = 500
 
 
 def _uuid() -> str:
@@ -159,6 +160,28 @@ class SQLAlchemyCommerceRepository:
         with self.database.session() as session:
             platform = str(frame.iloc[0]["platform"])
             self._ensure_shop(session, context, platform)
+            product_skus = set()
+            for _, row in frame.iterrows():
+                sku = row.get("seller_sku")
+                if pd.isna(sku) or not str(sku).strip():
+                    sku = row.get("product_id")
+                if not pd.isna(sku) and str(sku).strip():
+                    product_skus.add(str(sku))
+
+            products_by_sku: dict[str, Product] = {}
+            sku_list = list(product_skus)
+            for start in range(0, len(sku_list), PRODUCT_LOOKUP_CHUNK_SIZE):
+                existing_products = session.scalars(
+                    select(Product).where(
+                        Product.tenant_id == context.tenant_id,
+                        Product.shop_id == context.shop_id,
+                        Product.sku.in_(sku_list[start : start + PRODUCT_LOOKUP_CHUNK_SIZE]),
+                    )
+                ).all()
+                products_by_sku.update(
+                    (product.sku, product) for product in existing_products
+                )
+
             for (row_platform, external_order_id), group in frame.groupby(
                 ["platform", "order_id"], sort=False, dropna=False
             ):
@@ -223,24 +246,18 @@ class SQLAlchemyCommerceRepository:
                     order.items.append(item)
                     sku = item.sku or item.product_id
                     if sku:
-                        product = session.scalar(
-                            select(Product).where(
-                                Product.tenant_id == context.tenant_id,
-                                Product.shop_id == context.shop_id,
-                                Product.sku == sku,
-                            )
-                        )
+                        product = products_by_sku.get(sku)
                         if product is None:
-                            session.add(
-                                Product(
-                                    id=_uuid(),
-                                    tenant_id=context.tenant_id,
-                                    shop_id=context.shop_id,
-                                    sku=sku,
-                                    product_id=item.product_id,
-                                    product_name=item.product_name,
-                                )
+                            product = Product(
+                                id=_uuid(),
+                                tenant_id=context.tenant_id,
+                                shop_id=context.shop_id,
+                                sku=sku,
+                                product_id=item.product_id,
+                                product_name=item.product_name,
                             )
+                            session.add(product)
+                            products_by_sku[sku] = product
                         else:
                             product.product_name = item.product_name
                             product.product_id = item.product_id
