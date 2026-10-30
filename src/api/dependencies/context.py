@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import time
 from collections import defaultdict, deque
+from threading import Lock
 
 from fastapi import Depends, Header, HTTPException, Request, status
 
@@ -25,9 +26,20 @@ class RateLimiter:
     def __init__(self, limit: int) -> None:
         self.limit = max(limit, 1)
         self._requests: dict[str, deque[float]] = defaultdict(deque)
+        self._lock = Lock()
+        self._last_cleanup = 0.0
 
     def allow(self, identity: str) -> bool:
+        with self._lock:
+            return self._allow(identity)
+
+    def _allow(self, identity: str) -> bool:
         now = time.monotonic()
+        if now - self._last_cleanup >= 60:
+            expired = [key for key, bucket in self._requests.items() if not bucket or now - bucket[-1] >= 60]
+            for key in expired:
+                del self._requests[key]
+            self._last_cleanup = now
         bucket = self._requests[identity]
         while bucket and now - bucket[0] >= 60:
             bucket.popleft()

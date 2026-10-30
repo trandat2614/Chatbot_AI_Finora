@@ -37,7 +37,8 @@ Local mặc định có thể dùng SQLite. Staging/production bắt buộc dùn
 - Health: <http://127.0.0.1:8000/health>
 - Swagger local: <http://127.0.0.1:8000/docs>
 - API production contract: `/api/v1/*`
-- Demo: chỉ bật cho development bằng `ENABLE_DEMO=true`
+- UI demo tĩnh `/demo`: chỉ bật cho development bằng `ENABLE_DEMO=true`.
+- Chat landing page cho khách chưa đăng nhập: `DEMO_ENABLED=true`, BE gọi bằng service key. Xem [DEMO_CHATBOT.md](docs/DEMO_CHATBOT.md).
 
 ## Authentication
 
@@ -103,6 +104,7 @@ Container chạy non-root và tự thực hiện `alembic upgrade head` trước
 
 ## Tài liệu
 
+- [Kết nối widget chatbot demo vào landing page](docs/LANDING_CHATBOT_INTEGRATION.md)
 - [Insight và chatbot xu hướng sản phẩm: 9 ngành, 3 kỳ](docs/PRODUCT_TRENDS.md)
 - [Kiểm thử local](docs/LOCAL_TESTING.md)
 - [Contract cho Finora Node backend](docs/WEB_INTEGRATION.md)

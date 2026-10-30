@@ -34,3 +34,9 @@ So sánh giữa các sàn chỉ đáng tin khi cùng khoảng thời gian, cùng
 3. Tìm SKU và nhóm sản phẩm đóng góp doanh thu hoặc có hoàn/hủy bất thường.
 4. Kiểm tra biên đóng góp trước khi tăng khuyến mãi hoặc quảng cáo.
 5. Đề xuất một hành động ưu tiên, KPI đo lường và mốc đánh giá trong 2–4 tuần.
+
+## Khi tài liệu chưa bao phủ câu hỏi
+
+Với câu hỏi kiến thức chung về marketing, bán hàng và vận hành, có thể bổ sung bằng kiến thức nền của mô hình LLM nếu tài liệu RAG không có hoặc chưa đủ. Trả lời linh hoạt theo mục tiêu và lịch sử; nói rõ giả định, không tạo nguồn trích dẫn giả và không hứa kết quả chắc chắn.
+
+Kiến thức nền không thay thế số liệu thật của shop, thông tin tài khoản, tính năng/giá Finora hay chính sách hiện hành chưa được xác nhận. Khi thiếu số liệu, vẫn hướng dẫn cách kiểm tra hoặc cải thiện nhưng không đoán con số.

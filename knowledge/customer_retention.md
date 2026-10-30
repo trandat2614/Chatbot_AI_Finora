@@ -15,9 +15,11 @@ In multi-channel e-commerce, customer acquisition cost (CAC) continues to escala
 ## 2. Customer Lifetime Value (LTV) & LTV:CAC Ratio
 
 ### 2.1 Customer Lifetime Value (LTV) Formula
-Customer Lifetime Value represents the total net profit attributed to the entire future relationship with a customer.
+This simplified gross-margin LTV estimates gross profit over a defined customer lifetime; it is not net profit after all operating expenses.
 
 $$ \text{LTV} = \text{Average Order Value (AOV)} \times \text{Purchase Frequency per Year} \times \text{Average Customer Lifetime (Years)} \times \text{Gross Profit Margin (\%)} $$
+
+For a fixed 12-month horizon: LTV = AOV × number of purchases in 12 months × gross margin **as a decimal**. Compare LTV and CAC using the same cohort, horizon and cost basis. LTV/CAC of 3 or higher is a reference level ("mức tham khảo"), not a guarantee.
 
 ### 2.2 LTV:CAC Ratio Health Benchmarks
 
@@ -98,3 +100,15 @@ For customers who have been inactive for 60 to 180 days, execute a 4-step progre
 2. **Day +75**: *Value Incentive* — Send a 10% discount voucher with a 5-day expiration countdown.
 3. **Day +90**: *High-Value Push* — Send a 20% discount voucher + Free Shipping for orders above a minimum threshold.
 4. **Day +120**: *Final Sunset Offer* — Send a "Final Offer" 30% discount voucher. If unredeemed, move user to low-frequency email lists to save marketing expenses.
+
+---
+
+## 8. RFM Customer Segmentation
+
+RFM means **Recency** (time since last purchase), **Frequency** (purchase count) and **Monetary** (spend over the same window). Score customers relative to the shop's own distribution rather than using universal currency cutoffs.
+
+- Recent, frequent, high-value customers: protect service quality and offer relevant cross-sells.
+- Recent first-time buyers: follow up with useful product guidance and a suitable second purchase.
+- Previously valuable but inactive customers: test a consent-based win-back message before a margin-safe incentive.
+
+Do not infer customer identities or RFM segment sizes without transaction-level customer history; aggregate store metrics alone are insufficient.

@@ -18,6 +18,8 @@ from core.exceptions import FinoraBaseError
 from core.llm_client import LLMClient
 from rag.vector_store import load_vector_store, vector_store_exists
 from src.db.session import get_database
+from src.demo.schemas import MAX_DEMO_BODY_BYTES
+from src.demo.service import create_demo_service
 from src.repositories.commerce_repository import SQLAlchemyCommerceRepository
 from src.schemas.api import ErrorDetail, ErrorResponse, ResponseMeta
 from src.services.raw_upload_service import RawUploadService
@@ -28,6 +30,8 @@ logger = logging.getLogger(__name__)
 
 
 def _error(request: Request, status_code: int, code: str, message: str) -> JSONResponse:
+    if _is_demo_request(request):
+        return JSONResponse(status_code=status_code, content={"error": message})
     request_id = getattr(request.state, "request_id", "unknown")
     payload = ErrorResponse(
         error=ErrorDetail(code=code, message=message),
@@ -36,9 +40,14 @@ def _error(request: Request, status_code: int, code: str, message: str) -> JSONR
     return JSONResponse(status_code=status_code, content=payload.model_dump(mode="json"))
 
 
+def _is_demo_request(request: Request) -> bool:
+    return request.url.path.startswith("/api/chatbot/demo/")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings.validate_security()
+    app.state.demo_service = create_demo_service() if settings.DEMO_ENABLED else None
     database = get_database()
     if settings.AUTO_CREATE_SCHEMA:
         database.create_schema()
@@ -59,6 +68,8 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+    from src.api.dependencies.context import RateLimiter
+
     app = FastAPI(
         title="Finora AI Server",
         version="4.0.0",
@@ -78,6 +89,7 @@ def create_app() -> FastAPI:
             503: {"model": ErrorResponse},
         },
     )
+    app.state.demo_rate_limiter = RateLimiter(settings.DEMO_RATE_LIMIT_PER_MIN)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.ALLOWED_ORIGINS,
@@ -95,13 +107,18 @@ def create_app() -> FastAPI:
     async def security_and_request_id(request: Request, call_next):
         started = time.perf_counter()
         request.state.request_id = request.headers.get("X-Request-ID") or f"req_{uuid.uuid4().hex}"
+        is_demo = _is_demo_request(request)
+        if is_demo and not settings.DEMO_ENABLED:
+            return _error(request, 404, "NOT_FOUND", "Không tìm thấy tính năng này.")
         content_length = request.headers.get("content-length")
         is_upload = request.url.path.endswith("/data/import") or request.url.path.endswith(
             "/knowledge/upload"
         )
         max_bytes = settings.MAX_UPLOAD_BYTES + 64 * 1024 if is_upload else settings.MAX_REQUEST_BYTES
+        if is_demo:
+            max_bytes = MAX_DEMO_BODY_BYTES
         if content_length and content_length.isdigit() and int(content_length) > max_bytes:
-            return _error(request, 413, "REQUEST_TOO_LARGE", "Request vượt quá kích thước cho phép.")
+            return _error(request, 400 if is_demo else 413, "REQUEST_TOO_LARGE", "Request vượt quá kích thước cho phép.")
         response = await call_next(request)
         response.headers["X-Request-ID"] = request.state.request_id
         response.headers["X-Content-Type-Options"] = "nosniff"
@@ -129,11 +146,14 @@ def create_app() -> FastAPI:
             message = str(detail.get("message", "Yêu cầu không hợp lệ."))
         else:
             code, message = "HTTP_ERROR", str(detail)
-        return _error(request, exc.status_code, code, message)
+        response = _error(request, exc.status_code, code, message)
+        if exc.headers:
+            response.headers.update(exc.headers)
+        return response
 
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(request: Request, _exc: RequestValidationError):
-        return _error(request, 422, "VALIDATION_ERROR", "Request không đúng schema.")
+        return _error(request, 400 if _is_demo_request(request) else 422, "VALIDATION_ERROR", "Request không đúng schema.")
 
     @app.exception_handler(FinoraBaseError)
     async def finora_error_handler(request: Request, exc: FinoraBaseError):
@@ -167,8 +187,9 @@ def create_app() -> FastAPI:
             name="demo",
         )
 
-    from src.api.routes import insights, legacy, v1
+    from src.api.routes import demo, insights, legacy, v1
 
+    app.include_router(demo.router)
     app.include_router(insights.router)
     app.include_router(v1.router)
     app.include_router(legacy.router)

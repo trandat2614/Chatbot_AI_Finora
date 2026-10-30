@@ -223,6 +223,47 @@ export function chatWithAi(identity, message, filters = {}) {
 
 Không retry import tự động nếu chưa có idempotency key. Không trả stack trace hay upstream secret về browser.
 
+## Chat demo cho khách chưa đăng nhập
+
+Hướng dẫn từng bước kèm router Express, widget landing page và proxy local/production: [LANDING_CHATBOT_INTEGRATION.md](LANDING_CHATBOT_INTEGRATION.md).
+
+Luồng landing page vẫn là Browser -> Node backend -> AI Server. Node gọi:
+
+- `GET /api/chatbot/demo/config`
+- `POST /api/chatbot/demo/chat`, body `{ "messages": [{"role":"user","content":"Doanh thu hôm qua bao nhiêu?"}] }`
+
+Hai endpoint này chỉ cần `X-Finora-Service-Key`; không tạo/gửi JWT tenant giả cho khách. BE xác định IP thật và **ghi đè** `X-Client-IP` (hoặc `X-Forwarded-For`), không tin header do browser tự gửi. Không dùng helper `callAiServer()` phía trên vì helper đó luôn yêu cầu identity và ký JWT.
+
+```js
+export async function callDemoAi(messages, verifiedClientIp) {
+  const response = await fetch(new URL("/api/chatbot/demo/chat", process.env.AI_SERVER_URL), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Finora-Service-Key": process.env.AI_SERVICE_KEY,
+      "X-Client-IP": verifiedClientIp,
+    },
+    body: JSON.stringify({ messages }),
+    signal: AbortSignal.timeout(90000),
+  });
+  const payload = await response.json();
+  if (!response.ok) {
+    const error = new Error(payload.error ?? "Trợ lý demo tạm thời chưa sẵn sàng.");
+    error.status = response.status;
+    error.requestId = response.headers.get("X-Request-ID");
+    error.retryAfter = response.headers.get("Retry-After");
+    throw error;
+  }
+  return payload; // { reply, mode: "demo" }
+}
+```
+
+Client giữ lịch sử. User tối đa 500 ký tự, assistant cắt còn 2.000 ký tự; server giữ tối đa 10 tin gần nhất, body tối đa 20 KiB. Tin đầu/cuối request phải là user. Rate limit mặc định 15 chat/phút/IP. Lỗi dùng `{ "error": "Thông báo tiếng Việt" }`: `400` input sai, `401` service key sai, `404` demo tắt, `429` hết quota (chờ `Retry-After`), `503` LLM chưa sẵn sàng/timeout/quá tải, `500` lỗi khác.
+
+Cấu hình AI server mới: `DEMO_ENABLED=true`, `DEMO_RATE_LIMIT_PER_MIN=15`, `DEMO_MODEL=` (mặc định Flash-Lite cho Gemini hoặc `FPT_CHAT_MODEL` cho FPT), `BRAND_NAME=Finora`, `WEBSITE_URL=https://finora.com.vn/`, `LOGIN_URL=https://finora.com.vn/signin`, `SIGNUP_URL=https://finora.com.vn/signup`. `ENABLE_DEMO` cũ chỉ điều khiển UI tĩnh, không tắt endpoint mới.
+
+Demo dùng dataset riêng, không đọc dữ liệu shop. Khi knowledge/RAG thiếu nội dung về marketing, bán hàng hoặc vận hành, cả demo và chat đã đăng nhập có thể dùng kiến thức nền LLM; không dùng fallback này để đoán số liệu hay tính năng Finora chưa xác nhận. Xem [DEMO_CHATBOT.md](DEMO_CHATBOT.md) cho curl, allow-list knowledge, giới hạn nhiều worker và UAT.
+
 ## Compatibility
 
 Các endpoint `/api/*` cũ đang được giữ dưới dạng deprecated wrappers. `X-API-Key` chỉ dùng cho local/test hoặc migration có kiểm soát khi `ENABLE_LEGACY_API_KEY=true`; production phải dùng `/api/v1`, JWT + service key và đặt `ENABLE_LEGACY_API_KEY=false`.

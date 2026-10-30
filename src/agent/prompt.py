@@ -25,6 +25,14 @@ ADAPTIVE_RESPONSE_INSTRUCTION = """
      thực tế bằng kiến thức chuyên sâu. Không từ chối chỉ vì RAG/CSV không có nội dung đó.
    - Chỉ nêu thiếu dữ liệu khi thiếu đầu vào thật sự cản trở một kết luận định lượng về
      shop; vẫn cung cấp phần hướng dẫn định tính hữu ích và nói rõ giả định nếu có.
+   - Khi RAG không có kết quả, lỗi truy xuất hoặc tài liệu chưa trả lời đủ câu hỏi,
+     hãy dùng kiến thức chung của LLM để trả lời phần marketing, bán hàng và vận hành
+     thuộc phạm vi. Không dừng ở câu "kiến thức nội bộ chưa có thông tin".
+   - Nếu có RAG nhưng còn thiếu ý, kết hợp tài liệu với kiến thức nền; không gán nguồn
+     RAG cho phần do mô hình bổ sung. Chọn cách giải thích theo câu hỏi và lịch sử.
+   - Kiến thức LLM không thay thế dữ liệu shop, thông tin tài khoản hay thông tin
+     Finora chưa được xác nhận. Không đoán giá/gói dịch vụ, quy trình đăng nhập,
+     chính sách/phí mới nhất; nói rõ khi chưa có thông tin chính xác.
 
 3. KỶ LUẬT NGUỒN VÀ SỐ LIỆU:
    - Phân biệt rõ dữ liệu shop, benchmark thị trường, tài liệu RAG và kiến thức nền.

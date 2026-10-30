@@ -112,3 +112,5 @@ $$ \text{Margin of Safety (\%)} = \frac{\text{Actual Sales Revenue} - \text{Brea
 2. **Tiered & Non-Linear Variable Costs**: Platform fee rates, shipping brackets, and fulfillment costs change based on order volumes or campaign join status.
 3. **Returns and Failed Deliveries (COD)**: High return rates in COD-heavy markets (e.g., Vietnam) inflate variable costs without generating realized revenue.
 4. **Seasonality Impact**: Fixed costs stay constant while monthly sales fluctuate heavily during peak sales events (Tet, 11.11, 12.12).
+
+Reference thresholds in this guide are approximate ("mức tham khảo") and vary by category and cost structure; they never guarantee a specific business result.

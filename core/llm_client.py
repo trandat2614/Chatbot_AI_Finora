@@ -1,7 +1,7 @@
 """
 LLM client for FINORA AI Business Advisor.
 
-Wraps the OpenAI Responses API with:
+Wraps an OpenAI-compatible Chat Completions API with:
 - Timeout handling
 - API error handling
 - No logging of sensitive data
@@ -28,9 +28,7 @@ logger = logging.getLogger(__name__)
 class LLMClient:
     """Thin wrapper around the OpenAI client.
 
-    Uses the Responses API (``client.responses.create``).  Falls back to
-    ``client.chat.completions.create`` when the Responses API endpoint is
-    unavailable (older SDK versions).
+    Uses ``client.chat.completions.create`` for Gemini or FPT.
 
     Args:
         api_key: Gemini API key. Defaults to ``settings.GEMINI_API_KEY``.
@@ -69,6 +67,14 @@ class LLMClient:
             timeout=self.timeout
         )
 
+    def configure_generation_limits(self, *, max_tokens: int, max_retries: int) -> None:
+        """Configure a dedicated client without changing shared chat defaults.
+
+        The SDK owns retries; callers must not add another retry loop.
+        """
+        self.max_tokens = max_tokens
+        self._client = self._client.with_options(max_retries=max_retries)
+
     # ------------------------------------------------------------------ #
     # Internal helpers
     # ------------------------------------------------------------------ #
@@ -80,9 +86,7 @@ class LLMClient:
         history: Optional[list[dict[str, str]]] = None,
         temperature: Optional[float] = None,
     ) -> str:
-        """Send a single request to the Gemini OpenAI-compatible API.
-
-        Tries the Responses API first; falls back to Chat Completions.
+        """Send a request to the configured OpenAI-compatible API.
 
         Args:
             system_prompt: System role instruction.

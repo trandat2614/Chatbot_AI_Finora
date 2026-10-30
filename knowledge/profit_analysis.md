@@ -33,11 +33,14 @@ $$ \text{Gross Profit Margin (\%)} = \frac{\text{Gross Profit}}{\text{Net Revenu
 - Inbound warehouse receiving and inspection costs.
 
 ### Industry Benchmark Gross Margins:
-- **Fashion & Apparel**: 50% - 70%
-- **Cosmetics & Skincare**: 60% - 80%
+- **Fashion & Apparel**: 40% - 60%
+- **Cosmetics & Skincare**: 50% - 70%
+- **Food & Beverage**: 60% - 70%
 - **Health Supplements**: 50% - 70%
 - **Consumer Electronics**: 15% - 30%
 - **Home & Living**: 40% - 60%
+
+These are illustrative reference ranges ("mức tham khảo"), not verified performance for an individual shop or a guaranteed target. Use the same revenue/COGS definition when comparing.
 
 ---
 

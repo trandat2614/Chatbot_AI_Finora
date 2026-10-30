@@ -57,7 +57,7 @@ Marketing expenses rising rapidly while new customer acquisition growth remains 
 High ad spend with insufficient ad-attributed revenue, leading to overall store margin compression.
 
 ### Actionable Remediation Plan:
-1. **Aggressive Campaign Pruning**: Immediately pause any ad campaign yielding a ROAS below 1.5x.
+1. **Campaign Pruning**: Review campaigns below their own break-even ROAS; account for gross margin, fees, returns and shipping before reducing budget.
 2. **Ad Set Isolation**: Reallocate budget exclusively to proven ad sets and winning ad creatives.
 3. **AOV Expansion Bundling**: Create high-value product bundles to raise AOV, absorbing ad costs effectively.
 4. **Cart Abandonment Retargeting**: Shift a portion of ad budget from cold targeting to retargeting users who added items to cart in the last 7 days.
@@ -107,3 +107,17 @@ Topline sales volume expanding, but net cash flow and net profit margins shrinki
 4. **Voucher & Discount Cap**: Cap seller-absorbed voucher discounts to a maximum percentage of order value.
 
 **Target Metrics to Track**: Product Gross Margin, Net Profit Margin, Platform Fee Ratio.
+
+---
+
+## Playbook 8: Advertising Fatigue & Abandoned Checkout
+
+### Reference Metrics:
+- Social ad CTR of 1%-2% is a reference range ("mức tham khảo"); compare the same placement, audience and objective.
+- Ad frequency above 3-4 in a defined reporting window may indicate fatigue when CTR or conversion also declines; refresh creatives and A/B test one variable at a time.
+- Around 70% cart abandonment is a common reference level, not a target or a diagnosis on its own. Calculate abandoned carts / initiated carts × 100% in the same window.
+
+### Actionable Remediation Plan:
+1. Show shipping costs and delivery estimates before checkout; simplify unnecessary fields and test mobile checkout/payment errors.
+2. Remind consenting cart abandoners and exclude recent buyers from cold acquisition; cap discounts using contribution margin.
+3. Audit failed deliveries, return reasons, marketplace fees and seller-funded vouchers; standardize packaging and automate repetitive operations before adding fixed cost.

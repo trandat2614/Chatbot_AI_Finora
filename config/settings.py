@@ -59,6 +59,17 @@ class Settings:
     LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "2048"))
     LLM_TIMEOUT: int = int(os.getenv("LLM_TIMEOUT", "60"))
 
+    # Landing-page chat, independent from ENABLE_DEMO (the local static UI).
+    DEMO_ENABLED: bool = os.getenv("DEMO_ENABLED", "true").lower() in ("1", "true", "yes")
+    DEMO_RATE_LIMIT_PER_MIN: int = int(os.getenv("DEMO_RATE_LIMIT_PER_MIN", "15"))
+    DEMO_MODEL: str = os.getenv("DEMO_MODEL", "").strip() or (
+        FPT_CHAT_MODEL if AI_PROVIDER == "fpt" else "gemini-2.5-flash-lite"
+    )
+    BRAND_NAME: str = os.getenv("BRAND_NAME", "Finora")
+    WEBSITE_URL: str = os.getenv("WEBSITE_URL", "https://finora.com.vn/")
+    LOGIN_URL: str = os.getenv("LOGIN_URL", "https://finora.com.vn/signin")
+    SIGNUP_URL: str = os.getenv("SIGNUP_URL", "https://finora.com.vn/signup")
+
     # API server
     HOST: str = os.getenv("HOST", "0.0.0.0")
     PORT: int = int(os.getenv("PORT", "8000"))

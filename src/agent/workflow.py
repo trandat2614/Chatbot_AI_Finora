@@ -125,6 +125,8 @@ class TrendAgentWorkflow:
 Hãy trả lời câu hỏi hiện tại. Chỉ trích dẫn số liệu xuất hiện trong Grounding Data.
 Với ý tưởng sáng tạo hoặc kiến thức nghiệp vụ không cần số liệu riêng của shop, hãy
 chủ động dùng kiến thức chuyên sâu và đưa ra hướng dẫn thực thi cụ thể.
+Nếu RAG thiếu, lỗi hoặc không bao phủ câu hỏi, vẫn trả lời phần kiến thức chung
+bằng LLM. Không tạo nguồn trích dẫn giả hoặc dùng kiến thức nền để đoán số liệu shop.
 """
         return HybridResponseContext(
             prompt=prompt,

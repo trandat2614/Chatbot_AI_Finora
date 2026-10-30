@@ -32,6 +32,7 @@ E-commerce sales volume in South East Asia (Vietnam, Thailand, Indonesia, Philip
 ### Peak Revenue Seasons:
 - **Q1 (Tet / Lunar New Year Surge)**: Heavy buying velocity in January/February for fashion, gifts, food, and home goods.
 - **Q4 Mega-Sale Shopping Season (9.9, 10.10, 11.11, 12.12)**: Peak marketplace activity driven by massive platform voucher campaigns and consumer holiday shopping.
+- **Category-Specific Events**: Plan stock, offers and creative tests for 8/3, 20/10 and Black Friday where relevant; verify each year's dates and never assume every category has the same uplift.
 
 ### Low-Tide Revenue Seasons:
 - **Q2 (Post-Tet Quiet Period)**: April/May typically experiences lower consumer spend following major holiday expenditures.
@@ -93,3 +94,16 @@ Profit Trend:   📉 DECREASING (-15%)
 2. **Eliminate Unprofitable Promotional Vouchers**: Cap discount vouchers to ensure a minimum target contribution margin ratio.
 3. **Reallocate Ad Budgets to High-Margin Hero SKUs**: Shift performance marketing away from low-margin items toward high-margin SKUs.
 4. **Implement Volume Packaging Optimization**: Standardize box sizes to eliminate volumetric shipping penalty charges.
+
+---
+
+## 8. ABC Inventory & Repeat Purchase Drivers
+
+### ABC Analysis:
+Rank SKUs by revenue or gross profit contribution. A/B/C group boundaries depend on the portfolio; the 20% of products / 80% of revenue pattern is a reference approximation, not an observed fact about every store. Protect stock for A items and test clearance for slow C items. High sales volume does not imply high profit.
+
+### Inventory Turnover:
+Inventory turnover = COGS in the period / average inventory valued at cost. Average inventory = (opening inventory + closing inventory) / 2. Use more frequent averages if seasonality is strong. Reorder using sales velocity and supplier lead time; do not invent turnover when inventory cost is missing.
+
+### Repeat Purchase Lever:
+Revenue = traffic × conversion × AOV for the same measurement window. A customer-based lifecycle model can use acquired customers × purchase frequency × AOV; frequency includes repeat purchases. A campaign planning shorthand, traffic × first-purchase conversion × AOV × repeat-purchase multiplier, is valid only when conversion excludes repeat orders. Never multiply repeat purchases twice when conversion already counts all orders.
