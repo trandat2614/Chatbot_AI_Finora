@@ -19,7 +19,7 @@ from core.llm_client import LLMClient
 from rag.vector_store import load_vector_store, vector_store_exists
 from src.db.session import get_database
 from src.demo.schemas import MAX_DEMO_BODY_BYTES
-from src.demo.service import create_demo_service
+from src.demo.service import create_demo_service, create_system_info_service
 from src.repositories.commerce_repository import SQLAlchemyCommerceRepository
 from src.schemas.api import ErrorDetail, ErrorResponse, ResponseMeta
 from src.services.raw_upload_service import RawUploadService
@@ -48,6 +48,9 @@ def _is_demo_request(request: Request) -> bool:
 async def lifespan(app: FastAPI):
     settings.validate_security()
     app.state.demo_service = create_demo_service() if settings.DEMO_ENABLED else None
+    app.state.system_info_service = (
+        create_system_info_service() if settings.DEMO_ENABLED else None
+    )
     database = get_database()
     if settings.AUTO_CREATE_SCHEMA:
         database.create_schema()
