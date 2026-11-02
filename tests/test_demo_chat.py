@@ -77,6 +77,10 @@ def test_system_chat_uses_only_system_info_prompt_and_llm(demo_client):
     assert "Finora là nền tảng" in kwargs["system_prompt"]
     assert "https://finora.com.vn/signin" in kwargs["system_prompt"]
     assert "Không tư vấn nghiệp vụ" in kwargs["system_prompt"]
+    assert "theo dõi và phân tích hoạt động kinh doanh" in kwargs["system_prompt"]
+    assert "chỉ giới thiệu tổng quát trong 1-2 câu" in kwargs["system_prompt"]
+    assert "Không liệt kê hay giải thích chi tiết từng tính năng" in kwargs["system_prompt"]
+    assert "Revenue Leakage" not in kwargs["system_prompt"]
     assert "Demo Store" not in kwargs["system_prompt"]
     assert "{{" not in kwargs["system_prompt"]
     assert kwargs["temperature"] == 0.2

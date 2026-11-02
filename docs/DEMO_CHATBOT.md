@@ -22,7 +22,7 @@ BE gửi `X-Finora-Service-Key` và IP thật do BE xác định. Demo không y�
 
 Các endpoint demo yêu cầu service key. `DEMO_ENABLED=false` trả `404` trước xác thực. Demo có contract riêng, không dùng envelope `/api/v1`; các API cũ giữ nguyên contract. Không có streaming vì chat hiện tại cũng trả JSON một lần.
 
-`/system-chat` dùng LLM riêng với prompt chỉ chứa thông tin hệ thống đã xác nhận; không nạp dataset demo, knowledge kinh doanh, tenant data, tools hay RAG. Nếu LLM chưa cấu hình hoặc gặp lỗi, endpoint trả lỗi thay vì sinh câu trả lời cố định. Finora Node backend nên gọi endpoint này cho người chưa đăng nhập; endpoint `/chat` vẫn là demo dữ liệu kinh doanh.
+`/system-chat` dùng LLM riêng với prompt chỉ chứa thông tin hệ thống và mô tả tổng quát về nhóm tính năng; không nạp dataset demo, knowledge kinh doanh, tenant data, tools hay RAG. AI chỉ giới thiệu ngắn gọn các khả năng chung như theo dõi, phân tích hoạt động kinh doanh, xem xu hướng và nhận insight/kế hoạch tham khảo; không liệt kê hoặc hướng dẫn chi tiết từng tính năng, không phân tích hay tư vấn nghiệp vụ. Phân tích dữ liệu cá nhân yêu cầu đăng nhập và dữ liệu phù hợp. Nếu LLM chưa cấu hình hoặc gặp lỗi, endpoint trả lỗi thay vì sinh câu trả lời cố định. Finora Node backend nên gọi endpoint này cho người chưa đăng nhập; endpoint `/chat` vẫn là demo dữ liệu kinh doanh.
 
 Request chat:
 
