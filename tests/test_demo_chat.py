@@ -18,7 +18,7 @@ from src.demo.demo_dataset import build_demo_dataset
 from src.demo.schemas import MAX_DEMO_BODY_BYTES
 from src.demo.service import (
     MAX_KNOWLEDGE_CHARACTERS, PUBLIC_KNOWLEDGE_SECTIONS, DemoChatService,
-    create_demo_service, load_public_knowledge,
+    SystemInfoChatService, create_demo_service, load_public_knowledge,
 )
 
 BASE = "/api/chatbot/demo"
@@ -34,6 +34,7 @@ def demo_client(monkeypatch):
     llm.generate_response.return_value = "Doanh thu hôm qua là **24,1 triệu đồng**."
     app = create_app()
     app.state.demo_service = DemoChatService(llm)
+    app.state.system_info_service = SystemInfoChatService(llm)
     # No shared lifespan: these tests verify request isolation without opening a DB.
     client = TestClient(app)
     try:
@@ -60,6 +61,39 @@ def test_valid_chat_and_config_do_not_need_user_jwt(demo_client):
     assert len(config.json()["suggestions"]) == 6
     assert config.json()["loginUrl"] == "https://finora.com.vn/signin"
     assert config.json()["signupUrl"] == "https://finora.com.vn/signup"
+
+
+def test_system_chat_uses_only_system_info_prompt_and_llm(demo_client):
+    client, llm, _ = demo_client
+    response = client.post(
+        BASE + "/system-chat",
+        headers=HEADERS,
+        json={"messages": [{"role": "user", "content": "Finora là gì?"}]},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"reply": llm.generate_response.return_value, "mode": "demo"}
+    kwargs = llm.generate_response.call_args.kwargs
+    assert "Finora là nền tảng" in kwargs["system_prompt"]
+    assert "https://finora.com.vn/signin" in kwargs["system_prompt"]
+    assert "Không tư vấn nghiệp vụ" in kwargs["system_prompt"]
+    assert "Demo Store" not in kwargs["system_prompt"]
+    assert "{{" not in kwargs["system_prompt"]
+    assert kwargs["temperature"] == 0.2
+    assert kwargs["history"] == []
+
+
+def test_system_chat_returns_service_unavailable_instead_of_fixed_answer(demo_client):
+    client, llm, _ = demo_client
+    llm.generate_response.return_value = ""
+    response = client.post(
+        BASE + "/system-chat",
+        headers=HEADERS,
+        json={"messages": [{"role": "user", "content": "Cách đăng nhập?"}]},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["error"]
 
 
 @pytest.mark.parametrize("payload", [

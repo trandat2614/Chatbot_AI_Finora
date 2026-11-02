@@ -37,6 +37,17 @@ router = APIRouter(
     responses={code: {"model": DemoErrorResponse} for code in (400, 401, 404, 429, 500, 503)},
 )
 
+CHAT_OPENAPI_EXTRA = {
+    "requestBody": {"required": True, "content": {"application/json": {"schema": {
+        "type": "object", "required": ["messages"], "additionalProperties": False,
+        "properties": {"messages": {"type": "array", "minItems": 1, "items": {
+            "type": "object", "required": ["role", "content"], "additionalProperties": False,
+            "properties": {"role": {"type": "string", "enum": ["user", "assistant"]},
+                           "content": {"type": "string", "minLength": 1}},
+        }}},
+    }}}},
+}
+
 
 def client_ip(request: Request) -> str:
     # Called only after authenticating BE; BE must overwrite browser-supplied headers.
@@ -96,14 +107,26 @@ async def chat(request: Request) -> DemoChatResponse:
         raise HTTPException(
             400, detail="Hội thoại không hợp lệ. Chỉ gửi tin user/assistant; tin đầu và cuối phải là user, mỗi tin user tối đa 500 ký tự.",
         ) from None
-    service = getattr(request.app.state, "demo_service", None)
+    is_system_chat = request.url.path.endswith("/system-chat")
+    service_name = "system_info_service" if is_system_chat else "demo_service"
+    service = getattr(request.app.state, service_name, None)
     if service is None:
-        raise HTTPException(503, detail="Trợ lý demo tạm thời chưa sẵn sàng. Bạn vui lòng thử lại sau.")
+        raise HTTPException(503, detail="Trợ lý AI tạm thời chưa sẵn sàng. Bạn vui lòng thử lại sau.")
     try:
         reply = await run_in_threadpool(service.reply, payload.messages)
     except LLMClientError:
-        raise HTTPException(503, detail="Trợ lý demo đang bận. Bạn vui lòng thử lại sau.") from None
+        raise HTTPException(503, detail="Trợ lý AI đang bận. Bạn vui lòng thử lại sau.") from None
     except Exception as exc:
         logger.error("Demo chat failed type=%s", type(exc).__name__)
         raise HTTPException(500, detail="Có lỗi khi xử lý tin nhắn. Bạn vui lòng thử lại sau.") from None
     return DemoChatResponse(reply=reply)
+
+
+router.add_api_route(
+    "/system-chat",
+    chat,
+    methods=["POST"],
+    response_model=DemoChatResponse,
+    openapi_extra=CHAT_OPENAPI_EXTRA,
+    name="system_chat",
+)

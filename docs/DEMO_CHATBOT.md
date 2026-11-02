@@ -18,8 +18,11 @@ BE gửi `X-Finora-Service-Key` và IP thật do BE xác định. Demo không y�
 | --- | --- | --- |
 | `GET` | `/api/chatbot/demo/config` | Tên bot, lời chào nêu rõ dữ liệu mẫu, 6 câu gợi ý, link đăng nhập/đăng ký |
 | `POST` | `/api/chatbot/demo/chat` | `{ "reply": "...", "mode": "demo" }` |
+| `POST` | `/api/chatbot/demo/system-chat` | AI trả lời câu hỏi giới hạn trong hướng dẫn về Finora, tài khoản, đăng nhập/đăng ký và khôi phục mật khẩu |
 
-Cả hai endpoint yêu cầu service key. `DEMO_ENABLED=false` trả `404` trước xác thực. Demo có contract riêng, không dùng envelope `/api/v1`; các API cũ giữ nguyên contract. Không có streaming vì chat hiện tại cũng trả JSON một lần.
+Các endpoint demo yêu cầu service key. `DEMO_ENABLED=false` trả `404` trước xác thực. Demo có contract riêng, không dùng envelope `/api/v1`; các API cũ giữ nguyên contract. Không có streaming vì chat hiện tại cũng trả JSON một lần.
+
+`/system-chat` dùng LLM riêng với prompt chỉ chứa thông tin hệ thống đã xác nhận; không nạp dataset demo, knowledge kinh doanh, tenant data, tools hay RAG. Nếu LLM chưa cấu hình hoặc gặp lỗi, endpoint trả lỗi thay vì sinh câu trả lời cố định. Finora Node backend nên gọi endpoint này cho người chưa đăng nhập; endpoint `/chat` vẫn là demo dữ liệu kinh doanh.
 
 Request chat:
 

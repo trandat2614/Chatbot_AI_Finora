@@ -136,9 +136,46 @@ class DemoChatService:
         return answer
 
 
+class SystemInfoChatService:
+    """System/account help with no demo data, business knowledge, tools or RAG."""
+
+    def __init__(self, llm_client: LLMClient | None = None) -> None:
+        self._llm = llm_client
+        template = Path(__file__).with_name("system_info_prompt.md").read_text(encoding="utf-8")
+        self._system_prompt = (
+            template.replace("{{BRAND_NAME}}", settings.BRAND_NAME)
+            .replace("{{WEBSITE_URL}}", settings.WEBSITE_URL)
+            .replace("{{LOGIN_URL}}", settings.LOGIN_URL)
+            .replace("{{SIGNUP_URL}}", settings.SIGNUP_URL)
+        )
+
+    def reply(self, messages: list[DemoMessage]) -> str:
+        if self._llm is None:
+            raise LLMClientError("System info LLM is not configured.")
+        answer = self._llm.generate_response(
+            messages[-1].content,
+            system_prompt=self._system_prompt,
+            history=[message.model_dump() for message in messages[:-1]],
+            temperature=0.2,
+        )
+        if not isinstance(answer, str) or not answer.strip():
+            raise LLMClientError("Empty system info LLM response.")
+        if "Thông tin hệ thống đã được xác nhận:" in answer:
+            raise LLMClientError("System info prompt was returned by the model.")
+        return answer
+
+
+def _create_demo_llm_client() -> LLMClient | None:
+    if not settings.is_api_key_configured():
+        return None
+    client = LLMClient(model=settings.DEMO_MODEL, timeout=30)
+    client.configure_generation_limits(max_tokens=700, max_retries=1)
+    return client
+
+
 def create_demo_service() -> DemoChatService:
-    client = None
-    if settings.is_api_key_configured():
-        client = LLMClient(model=settings.DEMO_MODEL, timeout=30)
-        client.configure_generation_limits(max_tokens=700, max_retries=1)
-    return DemoChatService(client)
+    return DemoChatService(_create_demo_llm_client())
+
+
+def create_system_info_service() -> SystemInfoChatService:
+    return SystemInfoChatService(_create_demo_llm_client())
