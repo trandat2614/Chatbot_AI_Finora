@@ -25,6 +25,18 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+class MarketingIdempotency(Base):
+    """Short-lived AI response cache; never the authoritative BE draft store."""
+    __tablename__ = "marketing_idempotency"
+
+    scope_key: Mapped[str] = mapped_column(String(64), primary_key=True)
+    payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    operation_id: Mapped[str] = mapped_column(String(36), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
+    response: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    http_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+
 class Shop(Base):
     __tablename__ = "shops"
     __table_args__ = (UniqueConstraint("tenant_id", "external_shop_id", name="uq_shop_owner"),)

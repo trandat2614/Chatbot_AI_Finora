@@ -58,6 +58,13 @@ async def lifespan(app: FastAPI):
     app.state.commerce_repository = SQLAlchemyCommerceRepository(database)
     RawUploadService().cleanup_expired()
     app.state.llm_client = LLMClient() if settings.is_api_key_configured() else None
+    app.state.marketing_vector_store = None
+    from src.services.marketing.knowledge import open_store, vector_directory
+    if settings.is_api_key_configured() and (vector_directory() / "chroma.sqlite3").exists():
+        try:
+            app.state.marketing_vector_store = open_store()
+        except Exception:
+            logger.warning("Marketing vector store unavailable; using core rules.")
     app.state.vector_store = None
     if vector_store_exists():
         try:
@@ -103,6 +110,8 @@ def create_app() -> FastAPI:
             "Authorization",
             "X-Finora-Service-Key",
             "X-API-Key",
+            "Idempotency-Key",
+            "X-Request-ID",
         ],
     )
 
@@ -156,6 +165,13 @@ def create_app() -> FastAPI:
 
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(request: Request, _exc: RequestValidationError):
+        if request.url.path.startswith("/api/v1/marketing/"):
+            response = _error(request, 422, "VALIDATION_ERROR", "Request không đúng schema; xem error.fields.")
+            import json
+            body = json.loads(response.body)
+            body["error"]["fields"] = [{"path": ".".join(map(str, error["loc"])), "type": error["type"]}
+                                        for error in _exc.errors()]
+            return JSONResponse(status_code=422, content=body)
         return _error(request, 400 if _is_demo_request(request) else 422, "VALIDATION_ERROR", "Request không đúng schema.")
 
     @app.exception_handler(FinoraBaseError)

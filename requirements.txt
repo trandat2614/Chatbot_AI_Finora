@@ -28,3 +28,4 @@ SQLAlchemy>=2.0.36
 alembic>=1.14.0
 psycopg[binary]>=3.2.3
 PyJWT>=2.10.1
+regex>=2024.11.6

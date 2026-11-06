@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import date
+from datetime import date, datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request
 
@@ -29,6 +29,31 @@ def chat(
     request: Request,
     context: AuthContext = Depends(require_auth_context),
 ) -> ChatResponse:
+    if payload.marketing_action is not None:
+        # Explicit typed tool intent supplied by the trusted BE. Never infer a
+        # creative-writing intent from isolated words such as Facebook or SKU.
+        from src.api.dependencies.context import require_write_role
+        from src.api.routes.marketing import marketing_context, marketing_service
+        from src.schemas.marketing import GenerationRequest, ProductSnapshot
+        import asyncio
+
+        marketing_context(context)
+        require_write_role(context)
+        action = payload.marketing_action
+        product = request.app.state.commerce_repository.get_product(context.tenant_id, context.shop_id, action.sku)
+        if product is None:
+            raise HTTPException(404, detail={"code": "PRODUCT_NOT_FOUND", "message": "Không truy cập được SKU trong shop hiện tại."})
+        generation = GenerationRequest(product=ProductSnapshot(sku=product["sku"], name=product["product_name"],
+            source="authenticated_commerce_repository", updated_at=datetime.now(timezone.utc)),
+            targets=action.targets, variants=action.variants, objective=action.objective,
+            instructions=payload.message)
+        result = asyncio.run(marketing_service(request).generate(generation, context, request.state.request_id))
+        result.warnings.append("Chat dùng tên/SKU từ dữ liệu đã nhập; thời điểm snapshot là lúc đọc. BE cần bổ sung snapshot catalog nếu cần giá/thuộc tính mới nhất.")
+        return ChatResponse(data=ChatData(answer="\n\n".join(item.content.plain_text for item in result.items)
+                or "Chưa tạo được nội dung. Kiểm tra lỗi/thiếu dữ liệu trong marketing.",
+            sources=[Source(source=s.doc_id) for s in result.metadata.sources],
+            rag_context_used=bool(result.metadata.sources), warnings=result.warnings,
+            analysis_status="OK" if result.items else "INSUFFICIENT_DATA", intent=Intent.MARKETING_CONTENT.value, marketing=result), meta=meta(request))
     if len(payload.history) > settings.MAX_HISTORY_MESSAGES:
         raise HTTPException(
             status_code=422,

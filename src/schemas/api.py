@@ -8,6 +8,7 @@ from pydantic import Field
 
 from src.schemas.base import APIModel, ResponseMeta
 from src.schemas.product_trends import TrendExport
+from src.schemas.marketing import MarketingChatAction, MarketingResponse
 
 from src.schemas.commerce import (
     ActionItem,
@@ -331,6 +332,7 @@ class ChatRequest(APIModel):
     product_query: str = Field(default="", max_length=300)
     trend_data: TrendExport | None = None
     platform: Literal["shopee", "tiktok_shop", "lazada"] | None = None
+    marketing_action: MarketingChatAction | None = None
 
 
 class Source(APIModel):
@@ -347,6 +349,7 @@ class ChatData(APIModel):
     warnings: list[str] = Field(default_factory=list)
     analysis_status: AnalysisStatus
     intent: str
+    marketing: MarketingResponse | None = None
 
 
 class ChatResponse(APIModel):

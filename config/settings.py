@@ -59,6 +59,25 @@ class Settings:
     LLM_MAX_TOKENS: int = int(os.getenv("LLM_MAX_TOKENS", "2048"))
     LLM_TIMEOUT: int = int(os.getenv("LLM_TIMEOUT", "60"))
 
+    # Marketing uses the same provider/models, with an independent context budget.
+    MARKETING_TIMEOUT_SECONDS: float = float(os.getenv("MARKETING_TIMEOUT_SECONDS", "60"))
+    MARKETING_CALL_TIMEOUT_SECONDS: float = float(os.getenv("MARKETING_CALL_TIMEOUT_SECONDS", "20"))
+    MARKETING_MAX_REPAIRS: int = int(os.getenv("MARKETING_MAX_REPAIRS", "1"))
+    MARKETING_MAX_WORKLOAD: int = int(os.getenv("MARKETING_MAX_WORKLOAD", "15"))
+    MARKETING_MAX_TOKENS: int = int(os.getenv("MARKETING_MAX_TOKENS", "6000"))
+    MARKETING_RAG_TOP_K: int = int(os.getenv("MARKETING_RAG_TOP_K", "3"))
+    MARKETING_RAG_MIN_SCORE: float = float(os.getenv("MARKETING_RAG_MIN_SCORE", "0.25"))
+    MARKETING_CONTEXT_CHARS: int = int(os.getenv("MARKETING_CONTEXT_CHARS", "22000"))
+    MARKETING_SPEECH_UNITS_PER_SECOND: float = float(os.getenv("MARKETING_SPEECH_UNITS_PER_SECOND", "3.5"))
+    MARKETING_COLLECTION: str = os.getenv("MARKETING_COLLECTION", "finora_marketing_v1")
+    MARKETING_VECTOR_DIR: str = os.getenv("MARKETING_VECTOR_DIR", "data/marketing_vectors")
+    MARKETING_IDEMPOTENCY_TTL_SECONDS: int = int(os.getenv("MARKETING_IDEMPOTENCY_TTL_SECONDS", "86400"))
+    MARKETING_EMBEDDING_RETRIES: int = int(os.getenv("MARKETING_EMBEDDING_RETRIES", "2"))
+    MARKETING_EMBEDDING_TIMEOUT_SECONDS: float = float(os.getenv("MARKETING_EMBEDDING_TIMEOUT_SECONDS", "20"))
+    MARKETING_FACEBOOK_STANDARD_UNITS: int = int(os.getenv("MARKETING_FACEBOOK_STANDARD_UNITS", "120"))
+    MARKETING_FACEBOOK_SHORT_UNITS: int = int(os.getenv("MARKETING_FACEBOOK_SHORT_UNITS", "60"))
+    MARKETING_SHOPEE_TITLE_CHARS: int = int(os.getenv("MARKETING_SHOPEE_TITLE_CHARS", "120"))
+
     # Landing-page chat, independent from ENABLE_DEMO (the local static UI).
     DEMO_ENABLED: bool = os.getenv("DEMO_ENABLED", "true").lower() in ("1", "true", "yes")
     DEMO_RATE_LIMIT_PER_MIN: int = int(os.getenv("DEMO_RATE_LIMIT_PER_MIN", "15"))

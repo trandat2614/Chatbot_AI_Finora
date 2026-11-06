@@ -13,6 +13,7 @@ Backend AI của Finora, hỗ trợ chủ shop theo dõi hoạt động kinh doa
 - **AI Business Insights:** phát hiện điểm cần chú ý từ chỉ số, tạo insight kèm bằng chứng và quản lý trạng thái `new`, `read`, `dismissed`.
 - **Chatbot:** tách riêng chat dữ liệu shop, trải nghiệm bằng dữ liệu Demo Store và hướng dẫn thông tin hệ thống/tài khoản.
 - **RAG và kế hoạch:** truy xuất tài liệu public/private, hỗ trợ tư vấn, kế hoạch bán hàng và truyền thông.
+- **Nội dung bán hàng theo SKU:** API tạo caption Facebook, listing Shopee, kịch bản TikTok/Reels/Shopee Video, viết lại/chuyển thể, lịch 7 ngày và chiến lược. [Hướng dẫn nối backend](docs/marketing_api_integration.md).
 
 Các chỉ số kinh doanh được tính bằng code; LLM hỗ trợ diễn giải và tư vấn. Những đề xuất trong chat hoặc kế hoạch không tự thay đổi giá, ngân sách quảng cáo, voucher, listing hay tồn kho.
 
@@ -187,8 +188,27 @@ AI Server xác minh chữ ký, hạn dùng, issuer, audience và service key r�
 | `POST` | `/api/v1/sales-plan` | Đề xuất kế hoạch bán hàng |
 | `POST` | `/api/v1/communication-plan` | Đề xuất kế hoạch truyền thông |
 | `POST` | `/api/v1/knowledge/upload` | Upload và lập chỉ mục tài liệu private của shop |
+| `GET` | `/api/v1/marketing/capabilities` | Target/enum và cấu hình marketing được hỗ trợ |
+| `POST` | `/api/v1/marketing/generate` | Tạo 1–3 phương án theo SKU và target |
+| `POST` | `/api/v1/marketing/rewrite` | Tạo phiên bản mới từ nội dung cũ và snapshot hiện tại |
+| `POST` | `/api/v1/marketing/video-scripts/generate` | Kịch bản TikTok, Reels, Shopee Video |
+| `POST` | `/api/v1/marketing/video-scripts/adapt` | Chuyển thể video sang placement đích |
+| `POST` | `/api/v1/marketing/calendar` | Lịch đề xuất 7 ngày |
+| `POST` | `/api/v1/marketing/strategy` | Chiến lược ưu tiên cho shop nhỏ |
 
-Response thành công của API v1 có cấu trúc:
+API marketing trả envelope trực tiếp `request_id/status/items/errors/metadata`; cần thêm `Idempotency-Key` cho POST, dùng JWT + service key hiện hữu. Bản nháp/phiên bản/lịch chính thức do BE quản lý. [Contract, JSON đầy đủ, adapter Node và HTTP collection](docs/marketing_api_integration.md).
+
+Nạp bộ tri thức marketing riêng (không chạy `ingest.py` để nạp bộ này):
+
+```powershell
+python -m src.services.marketing.knowledge --dry-run
+python -m src.services.marketing.knowledge
+python -m pytest tests/test_marketing.py -q
+```
+
+Lệnh thật sử dụng embedding provider hiện có. Bộ [knowledge/marketing](knowledge/marketing/README.md) gồm 16 Markdown, 8 caption, 8 listing, 24 video và 3 bộ chuyển thể; mọi ví dụ là dữ liệu giả lập. Xem [kết quả kiểm chứng](docs/marketing_verification.md).
+
+Response thành công của các API v1 cũ (marketing dùng envelope riêng ở trên) có cấu trúc:
 
 ```json
 {"success":true,"data":{},"meta":{"request_id":"req_example"}}

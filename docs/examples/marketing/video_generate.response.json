@@ -1,0 +1,404 @@
+{
+  "request_id": "req_example_video_generate",
+  "status": "success",
+  "items": [
+    {
+      "client_reference": "mkt_e96497bad809b2b003d8927f72f7aa05",
+      "variant": 1,
+      "target": {
+        "channel": "tiktok",
+        "placement": "short_video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "status": "draft",
+      "content": {
+        "content_type": "video_script",
+        "title": "Áo thun cổ tròn — Áo có kiểu cổ nào?",
+        "concept": "Muốn nhìn rõ cổ áo trước khi chọn?",
+        "angle": "Tình huống sử dụng",
+        "objective": "introduce_product",
+        "audience": "người thích trang phục đơn giản",
+        "hook": "Muốn nhìn rõ cổ áo trước khi chọn?",
+        "key_message": "Áo thun cổ tròn",
+        "total_duration_seconds": 30,
+        "production_mode": "hands_only",
+        "video_style": "product_demo",
+        "scenes": [
+          {
+            "scene_id": "s1",
+            "start_seconds": 0.0,
+            "end_seconds": 8.0,
+            "duration_seconds": 8.0,
+            "visual_action": "Đặt áo lên mặt bàn, kéo phần cổ vào khung hình.",
+            "shot_type": "toàn cảnh sản phẩm",
+            "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+            "dialogue": null,
+            "voiceover": "Đây là áo thun cổ tròn.",
+            "on_screen_text": "Áo thun cổ tròn",
+            "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+            "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+            "people_required": 1,
+            "shows_face": false
+          },
+          {
+            "scene_id": "s2",
+            "start_seconds": 8.0,
+            "end_seconds": 20.0,
+            "duration_seconds": 12.0,
+            "visual_action": "Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải. Chuyển từ toàn cảnh sang cận bằng một nhịp cắt.",
+            "shot_type": "cận cảnh",
+            "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+            "dialogue": null,
+            "voiceover": "Chất liệu cotton, màu trắng.",
+            "on_screen_text": "Cotton · trắng",
+            "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+            "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+            "people_required": 1,
+            "shows_face": false
+          },
+          {
+            "scene_id": "s3",
+            "start_seconds": 20.0,
+            "end_seconds": 30.0,
+            "duration_seconds": 10.0,
+            "visual_action": "Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh.",
+            "shot_type": "toàn cảnh sản phẩm",
+            "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+            "dialogue": null,
+            "voiceover": "Xem thông tin áo trong shop.",
+            "on_screen_text": "Xem thông tin sản phẩm",
+            "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+            "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+            "people_required": 1,
+            "shows_face": false
+          }
+        ],
+        "cta": {
+          "text": "Xem thông tin sản phẩm trong shop.",
+          "action": "view_product",
+          "display_condition": "Dùng khi shop đã kiểm tra thông tin sản phẩm hiện tại."
+        },
+        "product_attachment_note": "Kiểm tra quyền gắn đúng SKU trước khi đăng; chưa xác nhận đã gắn.",
+        "post_caption": "Áo có kiểu cổ nào? Xem chi tiết sản phẩm trong shop.",
+        "hashtags": [],
+        "cover_text": "Áo thun cổ tròn",
+        "production": {
+          "shot_list": [
+            "Đặt áo lên mặt bàn, kéo phần cổ vào khung hình.",
+            "Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải.",
+            "Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh."
+          ],
+          "props": [
+            "Áo thun cổ tròn",
+            "mặt bàn"
+          ],
+          "location": "mặt bàn",
+          "actors": 1,
+          "filming_checklist": [
+            "Lau ống kính.",
+            "Đọc lại facts và kiểm tra sản phẩm đúng SKU.",
+            "Quay dọc, kiểm tra chữ không bị giao diện che."
+          ],
+          "editing_guide": [
+            "Ghép đúng timeline.",
+            "Đồng bộ chữ với thao tác.",
+            "Kiểm tra âm thanh và phụ đề trước khi xuất."
+          ]
+        },
+        "plain_text": "Áo thun cổ tròn — Áo có kiểu cổ nào?\n\nMuốn nhìn rõ cổ áo trước khi chọn?\n\nThời gian — Cảnh quay — Lời thoại/voiceover — Chữ trên màn hình — Ghi chú dựng\n\n0–8s — Đặt áo lên mặt bàn, kéo phần cổ vào khung hình. — Đây là áo thun cổ tròn. — Áo thun cổ tròn — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n8–20s — Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải. Chuyển từ toàn cảnh sang cận bằng một nhịp cắt. — Chất liệu cotton, màu trắng. — Cotton · trắng — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n20–30s — Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh. — Xem thông tin áo trong shop. — Xem thông tin sản phẩm — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\nXem thông tin sản phẩm trong shop.\n\nÁo có kiểu cổ nào? Xem chi tiết sản phẩm trong shop."
+      },
+      "source_client_reference": null,
+      "source_version_reference": null,
+      "change_summary": null,
+      "fact_claims": [
+        {
+          "text": "Áo thun cổ tròn",
+          "fact_refs": [
+            "product.name"
+          ]
+        }
+      ],
+      "warnings": [
+        "RAG marketing chưa được nạp; dùng quy tắc cốt lõi và snapshot.",
+        "Chưa xác nhận khả năng gắn sản phẩm; shop kiểm tra CTA trước khi dùng."
+      ],
+      "assumptions": [
+        "Giả định một người quay bằng điện thoại; dùng sản phẩm và bối cảnh tối giản sẵn có."
+      ],
+      "missing_fields": [],
+      "sources": []
+    },
+    {
+      "client_reference": "mkt_195930636deb16c28f62342db58be56f",
+      "variant": 1,
+      "target": {
+        "channel": "facebook",
+        "placement": "reels",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "status": "draft",
+      "content": {
+        "content_type": "video_script",
+        "title": "Áo thun cổ tròn — Áo có kiểu cổ nào?",
+        "concept": "Một góc quay để xem rõ chiếc áo cổ tròn.",
+        "angle": "Tình huống sử dụng",
+        "objective": "introduce_product",
+        "audience": "người thích trang phục đơn giản",
+        "hook": "Một góc quay để xem rõ chiếc áo cổ tròn.",
+        "key_message": "Áo thun cổ tròn",
+        "total_duration_seconds": 30,
+        "production_mode": "hands_only",
+        "video_style": "product_demo",
+        "scenes": [
+          {
+            "scene_id": "s1",
+            "start_seconds": 0.0,
+            "end_seconds": 8.0,
+            "duration_seconds": 8.0,
+            "visual_action": "Đặt áo lên mặt bàn, kéo phần cổ vào khung hình.",
+            "shot_type": "toàn cảnh sản phẩm",
+            "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+            "dialogue": null,
+            "voiceover": "Đây là áo thun cổ tròn.",
+            "on_screen_text": "Áo thun cổ tròn",
+            "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+            "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+            "people_required": 1,
+            "shows_face": false
+          },
+          {
+            "scene_id": "s2",
+            "start_seconds": 8.0,
+            "end_seconds": 20.0,
+            "duration_seconds": 12.0,
+            "visual_action": "Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải. Giữ khung hình tĩnh để xem rõ khi tắt âm.",
+            "shot_type": "cận cảnh",
+            "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+            "dialogue": null,
+            "voiceover": "Chất liệu cotton, màu trắng.",
+            "on_screen_text": "Cotton · trắng",
+            "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+            "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+            "people_required": 1,
+            "shows_face": false
+          },
+          {
+            "scene_id": "s3",
+            "start_seconds": 20.0,
+            "end_seconds": 30.0,
+            "duration_seconds": 10.0,
+            "visual_action": "Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh.",
+            "shot_type": "toàn cảnh sản phẩm",
+            "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+            "dialogue": null,
+            "voiceover": "Xem thông tin áo trong shop.",
+            "on_screen_text": "Xem thông tin sản phẩm",
+            "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+            "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+            "people_required": 1,
+            "shows_face": false
+          }
+        ],
+        "cta": {
+          "text": "Xem thông tin sản phẩm trong shop.",
+          "action": "view_product",
+          "display_condition": "Dùng khi shop đã kiểm tra thông tin sản phẩm hiện tại."
+        },
+        "product_attachment_note": "Kiểm tra quyền gắn đúng SKU trước khi đăng; chưa xác nhận đã gắn.",
+        "post_caption": "Áo có kiểu cổ nào? Xem chi tiết sản phẩm trong shop.",
+        "hashtags": [],
+        "cover_text": "Áo thun cổ tròn",
+        "production": {
+          "shot_list": [
+            "Đặt áo lên mặt bàn, kéo phần cổ vào khung hình.",
+            "Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải.",
+            "Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh."
+          ],
+          "props": [
+            "Áo thun cổ tròn",
+            "mặt bàn"
+          ],
+          "location": "mặt bàn",
+          "actors": 1,
+          "filming_checklist": [
+            "Lau ống kính.",
+            "Đọc lại facts và kiểm tra sản phẩm đúng SKU.",
+            "Quay dọc, kiểm tra chữ không bị giao diện che."
+          ],
+          "editing_guide": [
+            "Ghép đúng timeline.",
+            "Đồng bộ chữ với thao tác.",
+            "Kiểm tra âm thanh và phụ đề trước khi xuất."
+          ]
+        },
+        "plain_text": "Áo thun cổ tròn — Áo có kiểu cổ nào?\n\nMột góc quay để xem rõ chiếc áo cổ tròn.\n\nThời gian — Cảnh quay — Lời thoại/voiceover — Chữ trên màn hình — Ghi chú dựng\n\n0–8s — Đặt áo lên mặt bàn, kéo phần cổ vào khung hình. — Đây là áo thun cổ tròn. — Áo thun cổ tròn — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n8–20s — Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải. Giữ khung hình tĩnh để xem rõ khi tắt âm. — Chất liệu cotton, màu trắng. — Cotton · trắng — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n20–30s — Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh. — Xem thông tin áo trong shop. — Xem thông tin sản phẩm — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\nXem thông tin sản phẩm trong shop.\n\nÁo có kiểu cổ nào? Xem chi tiết sản phẩm trong shop."
+      },
+      "source_client_reference": null,
+      "source_version_reference": null,
+      "change_summary": null,
+      "fact_claims": [
+        {
+          "text": "Áo thun cổ tròn",
+          "fact_refs": [
+            "product.name"
+          ]
+        }
+      ],
+      "warnings": [
+        "RAG marketing chưa được nạp; dùng quy tắc cốt lõi và snapshot.",
+        "Chưa xác nhận khả năng gắn sản phẩm; shop kiểm tra CTA trước khi dùng."
+      ],
+      "assumptions": [
+        "Giả định một người quay bằng điện thoại; dùng sản phẩm và bối cảnh tối giản sẵn có."
+      ],
+      "missing_fields": [],
+      "sources": []
+    },
+    {
+      "client_reference": "mkt_e6880287514a60be0063899289532d64",
+      "variant": 1,
+      "target": {
+        "channel": "shopee",
+        "placement": "video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "status": "draft",
+      "content": {
+        "content_type": "video_script",
+        "title": "Áo thun cổ tròn — Áo có kiểu cổ nào?",
+        "concept": "Xem cổ và màu áo trước khi chọn phân loại.",
+        "angle": "Tình huống sử dụng",
+        "objective": "introduce_product",
+        "audience": "người thích trang phục đơn giản",
+        "hook": "Xem cổ và màu áo trước khi chọn phân loại.",
+        "key_message": "Áo thun cổ tròn",
+        "total_duration_seconds": 30,
+        "production_mode": "hands_only",
+        "video_style": "product_demo",
+        "scenes": [
+          {
+            "scene_id": "s1",
+            "start_seconds": 0.0,
+            "end_seconds": 8.0,
+            "duration_seconds": 8.0,
+            "visual_action": "Đặt áo lên mặt bàn, kéo phần cổ vào khung hình. Đặt nhãn tên sản phẩm cùng khung hình.",
+            "shot_type": "toàn cảnh sản phẩm",
+            "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+            "dialogue": null,
+            "voiceover": "Đây là áo thun cổ tròn.",
+            "on_screen_text": "Áo thun cổ tròn",
+            "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+            "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+            "people_required": 1,
+            "shows_face": false
+          },
+          {
+            "scene_id": "s2",
+            "start_seconds": 8.0,
+            "end_seconds": 20.0,
+            "duration_seconds": 12.0,
+            "visual_action": "Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải.",
+            "shot_type": "cận cảnh",
+            "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+            "dialogue": null,
+            "voiceover": "Chất liệu cotton, màu trắng.",
+            "on_screen_text": "Cotton · trắng",
+            "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+            "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+            "people_required": 1,
+            "shows_face": false
+          },
+          {
+            "scene_id": "s3",
+            "start_seconds": 20.0,
+            "end_seconds": 30.0,
+            "duration_seconds": 10.0,
+            "visual_action": "Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh.",
+            "shot_type": "toàn cảnh sản phẩm",
+            "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+            "dialogue": null,
+            "voiceover": "Tìm sản phẩm trong shop để xem chi tiết.",
+            "on_screen_text": "Tìm sản phẩm trong shop",
+            "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+            "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+            "people_required": 1,
+            "shows_face": false
+          }
+        ],
+        "cta": {
+          "text": "Tìm sản phẩm trong shop để xem chi tiết.",
+          "action": "view_product",
+          "display_condition": "Dùng khi shop đã kiểm tra thông tin sản phẩm hiện tại."
+        },
+        "product_attachment_note": "Kiểm tra quyền gắn đúng SKU trước khi đăng; chưa xác nhận đã gắn.",
+        "post_caption": "Áo có kiểu cổ nào? Xem chi tiết sản phẩm trong shop.",
+        "hashtags": [],
+        "cover_text": "Áo thun cổ tròn",
+        "production": {
+          "shot_list": [
+            "Đặt áo lên mặt bàn, kéo phần cổ vào khung hình.",
+            "Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải.",
+            "Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh."
+          ],
+          "props": [
+            "Áo thun cổ tròn",
+            "mặt bàn"
+          ],
+          "location": "mặt bàn",
+          "actors": 1,
+          "filming_checklist": [
+            "Lau ống kính.",
+            "Đọc lại facts và kiểm tra sản phẩm đúng SKU.",
+            "Quay dọc, kiểm tra chữ không bị giao diện che."
+          ],
+          "editing_guide": [
+            "Ghép đúng timeline.",
+            "Đồng bộ chữ với thao tác.",
+            "Kiểm tra âm thanh và phụ đề trước khi xuất."
+          ]
+        },
+        "plain_text": "Áo thun cổ tròn — Áo có kiểu cổ nào?\n\nXem cổ và màu áo trước khi chọn phân loại.\n\nThời gian — Cảnh quay — Lời thoại/voiceover — Chữ trên màn hình — Ghi chú dựng\n\n0–8s — Đặt áo lên mặt bàn, kéo phần cổ vào khung hình. Đặt nhãn tên sản phẩm cùng khung hình. — Đây là áo thun cổ tròn. — Áo thun cổ tròn — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n8–20s — Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải. — Chất liệu cotton, màu trắng. — Cotton · trắng — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n20–30s — Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh. — Tìm sản phẩm trong shop để xem chi tiết. — Tìm sản phẩm trong shop — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\nTìm sản phẩm trong shop để xem chi tiết.\n\nÁo có kiểu cổ nào? Xem chi tiết sản phẩm trong shop."
+      },
+      "source_client_reference": null,
+      "source_version_reference": null,
+      "change_summary": null,
+      "fact_claims": [
+        {
+          "text": "Áo thun cổ tròn",
+          "fact_refs": [
+            "product.name"
+          ]
+        }
+      ],
+      "warnings": [
+        "RAG marketing chưa được nạp; dùng quy tắc cốt lõi và snapshot.",
+        "Chưa xác nhận khả năng gắn sản phẩm; shop kiểm tra CTA trước khi dùng."
+      ],
+      "assumptions": [
+        "Giả định một người quay bằng điện thoại; dùng sản phẩm và bối cảnh tối giản sẵn có."
+      ],
+      "missing_fields": [],
+      "sources": []
+    }
+  ],
+  "errors": [],
+  "warnings": [
+    "Nội dung là bản nháp; shop cần kiểm tra facts và cách diễn đạt trước khi sử dụng."
+  ],
+  "missing_fields": [],
+  "metadata": {
+    "prompt_version": "marketing-2026-11-06.1",
+    "knowledge_version": null,
+    "sources": [],
+    "model": "offline-fixture",
+    "usage": [],
+    "duration_ms": 0.0,
+    "idempotency_replayed": false,
+    "requires_human_review": true
+  },
+  "calendar": [],
+  "strategies": []
+}

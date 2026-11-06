@@ -136,6 +136,32 @@ class LLMClient:
     # Public interface
     # ------------------------------------------------------------------ #
 
+    def generate_json(self, *, system_prompt: str, user_message: str,
+                      timeout: float, max_tokens: int) -> dict:
+        """Request-scoped options: no hidden SDK retries or mutation of chat defaults.
+
+        Schema and semantic validation belong to the calling feature. Usage is
+        returned only when the upstream actually supplies it.
+        """
+        try:
+            response = self._client.with_options(timeout=timeout, max_retries=0).chat.completions.create(
+                model=self.model,
+                messages=[{"role": "system", "content": sanitize_text(system_prompt)},
+                          {"role": "user", "content": sanitize_text(user_message)}],
+                temperature=self.temperature,
+                max_tokens=max_tokens,
+                response_format={"type": "json_object"},
+            )
+            usage = response.usage.model_dump(exclude_none=True) if response.usage else None
+            return {"text": response.choices[0].message.content or "", "usage": usage,
+                    "model": response.model or self.model}
+        except APITimeoutError as exc:
+            raise LLMTimeoutError("Marketing provider timeout.") from exc
+        except AuthenticationError as exc:
+            raise LLMAuthenticationError("Marketing provider authentication failed.") from exc
+        except APIError as exc:
+            raise LLMClientError("Marketing provider unavailable.") from exc
+
     def generate_response(
         self,
         user_message: str,

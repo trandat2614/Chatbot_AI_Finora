@@ -1,0 +1,51 @@
+{
+  "product": {
+    "sku": "AT001",
+    "name": "Áo thun cổ tròn",
+    "source": "synthetic_fixture",
+    "updated_at": "2026-11-06T09:00:00+07:00",
+    "industry": "fashion",
+    "attributes": [
+      {
+        "key": "material",
+        "value": "cotton",
+        "source": "synthetic_fixture"
+      },
+      {
+        "key": "color",
+        "value": "trắng",
+        "source": "synthetic_fixture"
+      },
+      {
+        "key": "neck",
+        "value": "cổ tròn",
+        "source": "synthetic_fixture"
+      }
+    ],
+    "price": null,
+    "currency": "VND",
+    "product_url": null,
+    "offer": null,
+    "evidence": []
+  },
+  "objective": "introduce_product",
+  "audience": "người thích trang phục đơn giản",
+  "variants": 1,
+  "targets": [
+    {
+      "channel": "tiktok",
+      "placement": "short_video",
+      "content_type": "video_script"
+    },
+    {
+      "channel": "facebook",
+      "placement": "reels",
+      "content_type": "video_script"
+    },
+    {
+      "channel": "shopee",
+      "placement": "video",
+      "content_type": "video_script"
+    }
+  ]
+}

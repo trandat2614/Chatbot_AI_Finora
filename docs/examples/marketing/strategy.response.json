@@ -1,0 +1,91 @@
+{
+  "request_id": "req_example_strategy",
+  "status": "success",
+  "items": [],
+  "errors": [],
+  "warnings": [
+    "RAG marketing chưa được nạp; dùng quy tắc cốt lõi và snapshot.",
+    "KPI là chỉ số đề xuất cần đo, không phải kết quả hoặc cam kết doanh thu.",
+    "Nguồn lực chưa được cung cấp."
+  ],
+  "missing_fields": [],
+  "metadata": {
+    "prompt_version": "marketing-2026-11-06.1",
+    "knowledge_version": null,
+    "sources": [],
+    "model": "offline-fixture",
+    "usage": [],
+    "duration_ms": 0.0,
+    "idempotency_replayed": false,
+    "requires_human_review": true
+  },
+  "calendar": [],
+  "strategies": [
+    {
+      "priority": 1,
+      "name": "Demo chi tiết",
+      "problem": "Khách cần xem rõ chi tiết.",
+      "suitable_when": "Có sản phẩm thật và thông tin đã xác nhận.",
+      "conditions": [
+        "Shop kiểm tra dữ liệu sản phẩm."
+      ],
+      "message": "Giúp khách xem chi tiết để lựa chọn.",
+      "channels": [
+        "facebook"
+      ],
+      "actions": [
+        "Chọn chi tiết cần giải thích.",
+        "Chuẩn bị nội dung từ facts.",
+        "Đo phản hồi và điều chỉnh."
+      ],
+      "resources": [
+        "điện thoại"
+      ],
+      "assumptions": [
+        "Chưa có baseline.",
+        "Chưa có audience được xác nhận; cần kiểm tra nhóm khách trước khi chọn thông điệp.",
+        "Chưa có ngân sách; đề xuất công việc nội dung, chưa dự toán chi phí hoặc chạy ads.",
+        "Giả định nguồn lực tối giản: một người và điện thoại; shop cần xác nhận khả năng thực hiện."
+      ],
+      "kpis_to_measure": [
+        "lượt xem thông tin sản phẩm",
+        "câu hỏi cần giải đáp"
+      ],
+      "experiment": "Đo baseline trước; chỉ đổi hook, giữ CTA và chỉ số chính, chưa kết luận từ vài lượt xem.",
+      "stop_or_adjust_when": "Điều chỉnh khi thông tin không còn phù hợp hoặc công sức vượt nguồn lực."
+    },
+    {
+      "priority": 2,
+      "name": "Giải đáp câu hỏi",
+      "problem": "Khách cần xem rõ chi tiết.",
+      "suitable_when": "Có sản phẩm thật và thông tin đã xác nhận.",
+      "conditions": [
+        "Shop kiểm tra dữ liệu sản phẩm."
+      ],
+      "message": "Giúp khách xem chi tiết để lựa chọn.",
+      "channels": [
+        "facebook"
+      ],
+      "actions": [
+        "Chọn chi tiết cần giải thích.",
+        "Chuẩn bị nội dung từ facts.",
+        "Đo phản hồi và điều chỉnh."
+      ],
+      "resources": [
+        "điện thoại"
+      ],
+      "assumptions": [
+        "Chưa có baseline.",
+        "Chưa có audience được xác nhận; cần kiểm tra nhóm khách trước khi chọn thông điệp.",
+        "Chưa có ngân sách; đề xuất công việc nội dung, chưa dự toán chi phí hoặc chạy ads.",
+        "Giả định nguồn lực tối giản: một người và điện thoại; shop cần xác nhận khả năng thực hiện."
+      ],
+      "kpis_to_measure": [
+        "lượt xem thông tin sản phẩm",
+        "câu hỏi cần giải đáp"
+      ],
+      "experiment": "Đo baseline trước; chỉ đổi hook, giữ CTA và chỉ số chính, chưa kết luận từ vài lượt xem.",
+      "stop_or_adjust_when": "Điều chỉnh khi thông tin không còn phù hợp hoặc công sức vượt nguồn lực."
+    }
+  ]
+}

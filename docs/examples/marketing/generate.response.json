@@ -1,0 +1,60 @@
+{
+  "request_id": "req_example_generate",
+  "status": "success",
+  "items": [
+    {
+      "client_reference": "mkt_4cc50f552a7cfc6a54d1d9cd6cd0bcdf",
+      "variant": 1,
+      "target": {
+        "channel": "facebook",
+        "placement": "feed",
+        "content_type": "caption"
+      },
+      "sku": "AT001",
+      "status": "draft",
+      "content": {
+        "content_type": "caption",
+        "angle": "Tình huống sử dụng",
+        "hook": "Bạn muốn xem chi tiết nào trước khi chọn?",
+        "body": "Áo thun cổ tròn. Xem thông tin sản phẩm để cân nhắc theo nhu cầu của bạn.",
+        "cta": "Xem thông tin sản phẩm trong shop.",
+        "hashtags": [],
+        "plain_text": "Bạn muốn xem chi tiết nào trước khi chọn?\n\nÁo thun cổ tròn. Xem thông tin sản phẩm để cân nhắc theo nhu cầu của bạn.\n\nXem thông tin sản phẩm trong shop."
+      },
+      "source_client_reference": null,
+      "source_version_reference": null,
+      "change_summary": null,
+      "fact_claims": [
+        {
+          "text": "Áo thun cổ tròn",
+          "fact_refs": [
+            "product.name"
+          ]
+        }
+      ],
+      "warnings": [
+        "RAG marketing chưa được nạp; dùng quy tắc cốt lõi và snapshot."
+      ],
+      "assumptions": [],
+      "missing_fields": [],
+      "sources": []
+    }
+  ],
+  "errors": [],
+  "warnings": [
+    "Nội dung là bản nháp; shop cần kiểm tra facts và cách diễn đạt trước khi sử dụng."
+  ],
+  "missing_fields": [],
+  "metadata": {
+    "prompt_version": "marketing-2026-11-06.1",
+    "knowledge_version": null,
+    "sources": [],
+    "model": "offline-fixture",
+    "usage": [],
+    "duration_ms": 0.0,
+    "idempotency_replayed": false,
+    "requires_human_review": true
+  },
+  "calendar": [],
+  "strategies": []
+}

@@ -1,0 +1,527 @@
+{
+  "request_id": "req_example_calendar",
+  "status": "success",
+  "items": [],
+  "errors": [],
+  "warnings": [
+    "Lịch là đề xuất 7 ngày, có thể dùng lại nội dung; BE kiểm tra quyền/reference và lưu chính thức. Không tự đăng bài."
+  ],
+  "missing_fields": [],
+  "metadata": {
+    "prompt_version": "marketing-2026-11-06.1",
+    "knowledge_version": null,
+    "sources": [],
+    "model": "offline-fixture",
+    "usage": [],
+    "duration_ms": 0.0,
+    "idempotency_replayed": false,
+    "requires_human_review": true
+  },
+  "calendar": [
+    {
+      "date": "2026-11-09",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "tiktok",
+        "placement": "short_video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Làm quen sản phẩm",
+      "angle": "Tình huống sử dụng",
+      "cta": "Xem thông tin sản phẩm.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-09",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "facebook",
+        "placement": "reels",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Làm quen sản phẩm",
+      "angle": "Tình huống sử dụng",
+      "cta": "Xem thông tin sản phẩm.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-09",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "shopee",
+        "placement": "video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Làm quen sản phẩm",
+      "angle": "Tình huống sử dụng",
+      "cta": "Xem thông tin sản phẩm trong shop.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-10",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "tiktok",
+        "placement": "short_video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Chi tiết để lựa chọn",
+      "angle": "Chi tiết sản phẩm",
+      "cta": "Xem thông tin sản phẩm.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-10",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "facebook",
+        "placement": "reels",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Chi tiết để lựa chọn",
+      "angle": "Chi tiết sản phẩm",
+      "cta": "Xem thông tin sản phẩm.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-10",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "shopee",
+        "placement": "video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Chi tiết để lựa chọn",
+      "angle": "Chi tiết sản phẩm",
+      "cta": "Xem thông tin sản phẩm trong shop.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-11",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "tiktok",
+        "placement": "short_video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Một tình huống sử dụng",
+      "angle": "Giải đáp lựa chọn",
+      "cta": "Xem thông tin sản phẩm.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-11",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "facebook",
+        "placement": "reels",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Một tình huống sử dụng",
+      "angle": "Giải đáp lựa chọn",
+      "cta": "Xem thông tin sản phẩm.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-11",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "shopee",
+        "placement": "video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Một tình huống sử dụng",
+      "angle": "Giải đáp lựa chọn",
+      "cta": "Xem thông tin sản phẩm trong shop.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-12",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "tiktok",
+        "placement": "short_video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Giải đáp câu hỏi",
+      "angle": "Tình huống sử dụng",
+      "cta": "Xem thông tin sản phẩm.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-12",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "facebook",
+        "placement": "reels",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Giải đáp câu hỏi",
+      "angle": "Tình huống sử dụng",
+      "cta": "Xem thông tin sản phẩm.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-12",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "shopee",
+        "placement": "video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Giải đáp câu hỏi",
+      "angle": "Tình huống sử dụng",
+      "cta": "Xem thông tin sản phẩm trong shop.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-13",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "tiktok",
+        "placement": "short_video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Cách xem phân loại",
+      "angle": "Chi tiết sản phẩm",
+      "cta": "Xem thông tin sản phẩm.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-13",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "facebook",
+        "placement": "reels",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Cách xem phân loại",
+      "angle": "Chi tiết sản phẩm",
+      "cta": "Xem thông tin sản phẩm.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-13",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "shopee",
+        "placement": "video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Cách xem phân loại",
+      "angle": "Chi tiết sản phẩm",
+      "cta": "Xem thông tin sản phẩm trong shop.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-14",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "tiktok",
+        "placement": "short_video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Nhắc lại điểm khác biệt",
+      "angle": "Giải đáp lựa chọn",
+      "cta": "Xem thông tin sản phẩm.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-14",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "facebook",
+        "placement": "reels",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Nhắc lại điểm khác biệt",
+      "angle": "Giải đáp lựa chọn",
+      "cta": "Xem thông tin sản phẩm.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-14",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "shopee",
+        "placement": "video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Nhắc lại điểm khác biệt",
+      "angle": "Giải đáp lựa chọn",
+      "cta": "Xem thông tin sản phẩm trong shop.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-15",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "tiktok",
+        "placement": "short_video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Tổng hợp thông tin cần xem",
+      "angle": "Tình huống sử dụng",
+      "cta": "Xem thông tin sản phẩm.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-15",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "facebook",
+        "placement": "reels",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Tổng hợp thông tin cần xem",
+      "angle": "Tình huống sử dụng",
+      "cta": "Xem thông tin sản phẩm.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    },
+    {
+      "date": "2026-11-15",
+      "timezone": "Asia/Ho_Chi_Minh",
+      "target": {
+        "channel": "shopee",
+        "placement": "video",
+        "content_type": "video_script"
+      },
+      "sku": "AT001",
+      "objective": "introduce_product",
+      "topic": "Tổng hợp thông tin cần xem",
+      "angle": "Tình huống sử dụng",
+      "cta": "Xem thông tin sản phẩm trong shop.",
+      "client_reference": null,
+      "draft_reference": null,
+      "version_reference": null,
+      "status": "needs_generation",
+      "video_style": "product_demo",
+      "duration_seconds": 30,
+      "preparation": [
+        "Kiểm tra facts, giá/ưu đãi và phiên bản trước khi dùng.",
+        "Chuẩn bị sản phẩm, điện thoại, bối cảnh và quyền dùng âm thanh."
+      ]
+    }
+  ],
+  "strategies": []
+}

@@ -20,13 +20,18 @@ from core.exceptions import VectorStoreNotFoundError, ConfigurationError
 logger = logging.getLogger(__name__)
 
 
-def _get_embeddings() -> GoogleGenerativeAIEmbeddings | OpenAIEmbeddings:
+def _get_embeddings(*, timeout: float | None = None, max_retries: int | None = None) -> GoogleGenerativeAIEmbeddings | OpenAIEmbeddings:
     """Create a Google Generative AI embeddings instance."""
     if not settings.is_api_key_configured():
         raise ConfigurationError(
             "GEMINI_API_KEY chưa được cấu hình. Không thể tạo embeddings."
         )
     if settings.AI_PROVIDER == "fpt":
+        request_options = {}
+        if timeout is not None:
+            request_options["request_timeout"] = timeout
+        if max_retries is not None:
+            request_options["max_retries"] = max_retries
         return OpenAIEmbeddings(
             model=settings.active_embedding_model(),
             api_key=settings.active_api_key(),
@@ -34,6 +39,7 @@ def _get_embeddings() -> GoogleGenerativeAIEmbeddings | OpenAIEmbeddings:
             # FPT accepts strings/string arrays, not the token-id arrays that
             # LangChain's OpenAI adapter normally sends after tokenization.
             check_embedding_ctx_length=False,
+            **request_options,
         )
     return GoogleGenerativeAIEmbeddings(
         model=settings.EMBEDDING_MODEL,
@@ -43,6 +49,7 @@ def _get_embeddings() -> GoogleGenerativeAIEmbeddings | OpenAIEmbeddings:
         # configuration from the shell. This application uses a Gemini
         # Developer API key, not Vertex AI OAuth credentials.
         vertexai=False,
+        request_options={"timeout": timeout} if timeout is not None else None,
     )
 
 

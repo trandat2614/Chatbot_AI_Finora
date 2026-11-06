@@ -1,0 +1,594 @@
+# Offline fixtures; replace variables with credentials issued by your BE.
+@baseUrl = http://127.0.0.1:8000
+@token = REPLACE_WITH_SHORT_LIVED_JWT
+@serviceKey = REPLACE_WITH_SERVER_SERVICE_KEY
+
+### Supported targets and product choices
+GET {{baseUrl}}/api/v1/marketing/capabilities
+Authorization: Bearer {{token}}
+X-Finora-Service-Key: {{serviceKey}}
+
+### generate
+POST {{baseUrl}}/api/v1/marketing/generate
+Authorization: Bearer {{token}}
+X-Finora-Service-Key: {{serviceKey}}
+Idempotency-Key: example-generate-REPLACE-ON-NEW-ACTION
+Content-Type: application/json
+
+{
+  "product": {
+    "sku": "AT001",
+    "name": "Áo thun cổ tròn",
+    "source": "synthetic_fixture",
+    "updated_at": "2026-11-06T09:00:00+07:00",
+    "industry": "fashion",
+    "attributes": [
+      {
+        "key": "material",
+        "value": "cotton",
+        "source": "synthetic_fixture"
+      },
+      {
+        "key": "color",
+        "value": "trắng",
+        "source": "synthetic_fixture"
+      },
+      {
+        "key": "neck",
+        "value": "cổ tròn",
+        "source": "synthetic_fixture"
+      }
+    ],
+    "price": null,
+    "currency": "VND",
+    "product_url": null,
+    "offer": null,
+    "evidence": []
+  },
+  "objective": "introduce_product",
+  "audience": "người thích trang phục đơn giản",
+  "variants": 1,
+  "channels": [
+    "facebook"
+  ]
+}
+
+### video_generate
+POST {{baseUrl}}/api/v1/marketing/video-scripts/generate
+Authorization: Bearer {{token}}
+X-Finora-Service-Key: {{serviceKey}}
+Idempotency-Key: example-video_generate-REPLACE-ON-NEW-ACTION
+Content-Type: application/json
+
+{
+  "product": {
+    "sku": "AT001",
+    "name": "Áo thun cổ tròn",
+    "source": "synthetic_fixture",
+    "updated_at": "2026-11-06T09:00:00+07:00",
+    "industry": "fashion",
+    "attributes": [
+      {
+        "key": "material",
+        "value": "cotton",
+        "source": "synthetic_fixture"
+      },
+      {
+        "key": "color",
+        "value": "trắng",
+        "source": "synthetic_fixture"
+      },
+      {
+        "key": "neck",
+        "value": "cổ tròn",
+        "source": "synthetic_fixture"
+      }
+    ],
+    "price": null,
+    "currency": "VND",
+    "product_url": null,
+    "offer": null,
+    "evidence": []
+  },
+  "objective": "introduce_product",
+  "audience": "người thích trang phục đơn giản",
+  "variants": 1,
+  "targets": [
+    {
+      "channel": "tiktok",
+      "placement": "short_video",
+      "content_type": "video_script"
+    },
+    {
+      "channel": "facebook",
+      "placement": "reels",
+      "content_type": "video_script"
+    },
+    {
+      "channel": "shopee",
+      "placement": "video",
+      "content_type": "video_script"
+    }
+  ]
+}
+
+### calendar
+POST {{baseUrl}}/api/v1/marketing/calendar
+Authorization: Bearer {{token}}
+X-Finora-Service-Key: {{serviceKey}}
+Idempotency-Key: example-calendar-REPLACE-ON-NEW-ACTION
+Content-Type: application/json
+
+{
+  "product": {
+    "sku": "AT001",
+    "name": "Áo thun cổ tròn",
+    "source": "synthetic_fixture",
+    "updated_at": "2026-11-06T09:00:00+07:00",
+    "industry": "fashion",
+    "attributes": [
+      {
+        "key": "material",
+        "value": "cotton",
+        "source": "synthetic_fixture"
+      },
+      {
+        "key": "color",
+        "value": "trắng",
+        "source": "synthetic_fixture"
+      },
+      {
+        "key": "neck",
+        "value": "cổ tròn",
+        "source": "synthetic_fixture"
+      }
+    ],
+    "price": null,
+    "currency": "VND",
+    "product_url": null,
+    "offer": null,
+    "evidence": []
+  },
+  "objective": "introduce_product",
+  "audience": "người thích trang phục đơn giản",
+  "variants": 1,
+  "targets": [
+    {
+      "channel": "tiktok",
+      "placement": "short_video",
+      "content_type": "video_script"
+    },
+    {
+      "channel": "facebook",
+      "placement": "reels",
+      "content_type": "video_script"
+    },
+    {
+      "channel": "shopee",
+      "placement": "video",
+      "content_type": "video_script"
+    }
+  ],
+  "start_date": "2026-11-09",
+  "generate_content": false
+}
+
+### strategy
+POST {{baseUrl}}/api/v1/marketing/strategy
+Authorization: Bearer {{token}}
+X-Finora-Service-Key: {{serviceKey}}
+Idempotency-Key: example-strategy-REPLACE-ON-NEW-ACTION
+Content-Type: application/json
+
+{
+  "shop_context": "Shop nhỏ, có một người chuẩn bị nội dung.",
+  "objective": "introduce_product",
+  "products": [
+    {
+      "sku": "AT001",
+      "name": "Áo thun cổ tròn",
+      "source": "synthetic_fixture",
+      "updated_at": "2026-11-06T09:00:00+07:00",
+      "industry": "fashion",
+      "attributes": [
+        {
+          "key": "material",
+          "value": "cotton",
+          "source": "synthetic_fixture"
+        },
+        {
+          "key": "color",
+          "value": "trắng",
+          "source": "synthetic_fixture"
+        },
+        {
+          "key": "neck",
+          "value": "cổ tròn",
+          "source": "synthetic_fixture"
+        }
+      ],
+      "price": null,
+      "currency": "VND",
+      "product_url": null,
+      "offer": null,
+      "evidence": []
+    }
+  ]
+}
+
+### rewrite
+POST {{baseUrl}}/api/v1/marketing/rewrite
+Authorization: Bearer {{token}}
+X-Finora-Service-Key: {{serviceKey}}
+Idempotency-Key: example-rewrite-REPLACE-ON-NEW-ACTION
+Content-Type: application/json
+
+{
+  "product": {
+    "sku": "AT001",
+    "name": "Áo thun cổ tròn",
+    "source": "synthetic_fixture",
+    "updated_at": "2026-11-06T09:00:00+07:00",
+    "industry": "fashion",
+    "attributes": [
+      {
+        "key": "material",
+        "value": "cotton",
+        "source": "synthetic_fixture"
+      },
+      {
+        "key": "color",
+        "value": "trắng",
+        "source": "synthetic_fixture"
+      },
+      {
+        "key": "neck",
+        "value": "cổ tròn",
+        "source": "synthetic_fixture"
+      }
+    ],
+    "price": null,
+    "currency": "VND",
+    "product_url": null,
+    "offer": null,
+    "evidence": []
+  },
+  "objective": "introduce_product",
+  "audience": "người thích trang phục đơn giản",
+  "variants": 1,
+  "targets": [
+    {
+      "channel": "tiktok",
+      "placement": "short_video",
+      "content_type": "video_script"
+    }
+  ],
+  "source": {
+    "client_reference": "mkt_e96497bad809b2b003d8927f72f7aa05",
+    "version_reference": "example-be-version-1",
+    "sku": "AT001",
+    "target": {
+      "channel": "tiktok",
+      "placement": "short_video",
+      "content_type": "video_script"
+    },
+    "content": {
+      "content_type": "video_script",
+      "title": "Áo thun cổ tròn — Áo có kiểu cổ nào?",
+      "concept": "Muốn nhìn rõ cổ áo trước khi chọn?",
+      "angle": "Tình huống sử dụng",
+      "objective": "introduce_product",
+      "audience": "người thích trang phục đơn giản",
+      "hook": "Muốn nhìn rõ cổ áo trước khi chọn?",
+      "key_message": "Áo thun cổ tròn",
+      "total_duration_seconds": 30,
+      "production_mode": "hands_only",
+      "video_style": "product_demo",
+      "scenes": [
+        {
+          "scene_id": "s1",
+          "start_seconds": 0.0,
+          "end_seconds": 8.0,
+          "duration_seconds": 8.0,
+          "visual_action": "Đặt áo lên mặt bàn, kéo phần cổ vào khung hình.",
+          "shot_type": "toàn cảnh sản phẩm",
+          "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+          "dialogue": null,
+          "voiceover": "Đây là áo thun cổ tròn.",
+          "on_screen_text": "Áo thun cổ tròn",
+          "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+          "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+          "people_required": 1,
+          "shows_face": false
+        },
+        {
+          "scene_id": "s2",
+          "start_seconds": 8.0,
+          "end_seconds": 20.0,
+          "duration_seconds": 12.0,
+          "visual_action": "Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải. Chuyển từ toàn cảnh sang cận bằng một nhịp cắt.",
+          "shot_type": "cận cảnh",
+          "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+          "dialogue": null,
+          "voiceover": "Chất liệu cotton, màu trắng.",
+          "on_screen_text": "Cotton · trắng",
+          "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+          "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+          "people_required": 1,
+          "shows_face": false
+        },
+        {
+          "scene_id": "s3",
+          "start_seconds": 20.0,
+          "end_seconds": 30.0,
+          "duration_seconds": 10.0,
+          "visual_action": "Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh.",
+          "shot_type": "toàn cảnh sản phẩm",
+          "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+          "dialogue": null,
+          "voiceover": "Xem thông tin áo trong shop.",
+          "on_screen_text": "Xem thông tin sản phẩm",
+          "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+          "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+          "people_required": 1,
+          "shows_face": false
+        }
+      ],
+      "cta": {
+        "text": "Xem thông tin sản phẩm trong shop.",
+        "action": "view_product",
+        "display_condition": "Dùng khi shop đã kiểm tra thông tin sản phẩm hiện tại."
+      },
+      "product_attachment_note": "Kiểm tra quyền gắn đúng SKU trước khi đăng; chưa xác nhận đã gắn.",
+      "post_caption": "Áo có kiểu cổ nào? Xem chi tiết sản phẩm trong shop.",
+      "hashtags": [],
+      "cover_text": "Áo thun cổ tròn",
+      "production": {
+        "shot_list": [
+          "Đặt áo lên mặt bàn, kéo phần cổ vào khung hình.",
+          "Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải.",
+          "Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh."
+        ],
+        "props": [
+          "Áo thun cổ tròn",
+          "mặt bàn"
+        ],
+        "location": "mặt bàn",
+        "actors": 1,
+        "filming_checklist": [
+          "Lau ống kính.",
+          "Đọc lại facts và kiểm tra sản phẩm đúng SKU.",
+          "Quay dọc, kiểm tra chữ không bị giao diện che."
+        ],
+        "editing_guide": [
+          "Ghép đúng timeline.",
+          "Đồng bộ chữ với thao tác.",
+          "Kiểm tra âm thanh và phụ đề trước khi xuất."
+        ]
+      },
+      "plain_text": "Áo thun cổ tròn — Áo có kiểu cổ nào?\n\nMuốn nhìn rõ cổ áo trước khi chọn?\n\nThời gian — Cảnh quay — Lời thoại/voiceover — Chữ trên màn hình — Ghi chú dựng\n\n0–8s — Đặt áo lên mặt bàn, kéo phần cổ vào khung hình. — Đây là áo thun cổ tròn. — Áo thun cổ tròn — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n8–20s — Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải. Chuyển từ toàn cảnh sang cận bằng một nhịp cắt. — Chất liệu cotton, màu trắng. — Cotton · trắng — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n20–30s — Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh. — Xem thông tin áo trong shop. — Xem thông tin sản phẩm — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\nXem thông tin sản phẩm trong shop.\n\nÁo có kiểu cổ nào? Xem chi tiết sản phẩm trong shop."
+    },
+    "product_snapshot": {
+      "sku": "AT001",
+      "name": "Áo thun cổ tròn",
+      "source": "synthetic_fixture",
+      "updated_at": "2026-11-06T09:00:00+07:00",
+      "industry": "fashion",
+      "attributes": [
+        {
+          "key": "material",
+          "value": "cotton",
+          "source": "synthetic_fixture"
+        },
+        {
+          "key": "color",
+          "value": "trắng",
+          "source": "synthetic_fixture"
+        },
+        {
+          "key": "neck",
+          "value": "cổ tròn",
+          "source": "synthetic_fixture"
+        }
+      ],
+      "price": null,
+      "currency": "VND",
+      "product_url": null,
+      "offer": null,
+      "evidence": []
+    }
+  },
+  "instructions": "Chuyển sang chỉ có chữ, không lời thoại.",
+  "production_mode": "text_only"
+}
+
+### adapt
+POST {{baseUrl}}/api/v1/marketing/video-scripts/adapt
+Authorization: Bearer {{token}}
+X-Finora-Service-Key: {{serviceKey}}
+Idempotency-Key: example-adapt-REPLACE-ON-NEW-ACTION
+Content-Type: application/json
+
+{
+  "product": {
+    "sku": "AT001",
+    "name": "Áo thun cổ tròn",
+    "source": "synthetic_fixture",
+    "updated_at": "2026-11-06T09:00:00+07:00",
+    "industry": "fashion",
+    "attributes": [
+      {
+        "key": "material",
+        "value": "cotton",
+        "source": "synthetic_fixture"
+      },
+      {
+        "key": "color",
+        "value": "trắng",
+        "source": "synthetic_fixture"
+      },
+      {
+        "key": "neck",
+        "value": "cổ tròn",
+        "source": "synthetic_fixture"
+      }
+    ],
+    "price": null,
+    "currency": "VND",
+    "product_url": null,
+    "offer": null,
+    "evidence": []
+  },
+  "objective": "introduce_product",
+  "audience": "người thích trang phục đơn giản",
+  "variants": 1,
+  "targets": [
+    {
+      "channel": "facebook",
+      "placement": "reels",
+      "content_type": "video_script"
+    },
+    {
+      "channel": "shopee",
+      "placement": "video",
+      "content_type": "video_script"
+    }
+  ],
+  "source": {
+    "client_reference": "mkt_e96497bad809b2b003d8927f72f7aa05",
+    "version_reference": "example-be-version-1",
+    "sku": "AT001",
+    "target": {
+      "channel": "tiktok",
+      "placement": "short_video",
+      "content_type": "video_script"
+    },
+    "content": {
+      "content_type": "video_script",
+      "title": "Áo thun cổ tròn — Áo có kiểu cổ nào?",
+      "concept": "Muốn nhìn rõ cổ áo trước khi chọn?",
+      "angle": "Tình huống sử dụng",
+      "objective": "introduce_product",
+      "audience": "người thích trang phục đơn giản",
+      "hook": "Muốn nhìn rõ cổ áo trước khi chọn?",
+      "key_message": "Áo thun cổ tròn",
+      "total_duration_seconds": 30,
+      "production_mode": "hands_only",
+      "video_style": "product_demo",
+      "scenes": [
+        {
+          "scene_id": "s1",
+          "start_seconds": 0.0,
+          "end_seconds": 8.0,
+          "duration_seconds": 8.0,
+          "visual_action": "Đặt áo lên mặt bàn, kéo phần cổ vào khung hình.",
+          "shot_type": "toàn cảnh sản phẩm",
+          "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+          "dialogue": null,
+          "voiceover": "Đây là áo thun cổ tròn.",
+          "on_screen_text": "Áo thun cổ tròn",
+          "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+          "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+          "people_required": 1,
+          "shows_face": false
+        },
+        {
+          "scene_id": "s2",
+          "start_seconds": 8.0,
+          "end_seconds": 20.0,
+          "duration_seconds": 12.0,
+          "visual_action": "Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải. Chuyển từ toàn cảnh sang cận bằng một nhịp cắt.",
+          "shot_type": "cận cảnh",
+          "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+          "dialogue": null,
+          "voiceover": "Chất liệu cotton, màu trắng.",
+          "on_screen_text": "Cotton · trắng",
+          "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+          "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+          "people_required": 1,
+          "shows_face": false
+        },
+        {
+          "scene_id": "s3",
+          "start_seconds": 20.0,
+          "end_seconds": 30.0,
+          "duration_seconds": 10.0,
+          "visual_action": "Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh.",
+          "shot_type": "toàn cảnh sản phẩm",
+          "camera_direction": "Máy cố định, lấy nét vào sản phẩm.",
+          "dialogue": null,
+          "voiceover": "Xem thông tin áo trong shop.",
+          "on_screen_text": "Xem thông tin sản phẩm",
+          "audio_direction": "Giọng rõ, để khoảng nghỉ cho thao tác.",
+          "editing_notes": "Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.",
+          "people_required": 1,
+          "shows_face": false
+        }
+      ],
+      "cta": {
+        "text": "Xem thông tin sản phẩm trong shop.",
+        "action": "view_product",
+        "display_condition": "Dùng khi shop đã kiểm tra thông tin sản phẩm hiện tại."
+      },
+      "product_attachment_note": "Kiểm tra quyền gắn đúng SKU trước khi đăng; chưa xác nhận đã gắn.",
+      "post_caption": "Áo có kiểu cổ nào? Xem chi tiết sản phẩm trong shop.",
+      "hashtags": [],
+      "cover_text": "Áo thun cổ tròn",
+      "production": {
+        "shot_list": [
+          "Đặt áo lên mặt bàn, kéo phần cổ vào khung hình.",
+          "Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải.",
+          "Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh."
+        ],
+        "props": [
+          "Áo thun cổ tròn",
+          "mặt bàn"
+        ],
+        "location": "mặt bàn",
+        "actors": 1,
+        "filming_checklist": [
+          "Lau ống kính.",
+          "Đọc lại facts và kiểm tra sản phẩm đúng SKU.",
+          "Quay dọc, kiểm tra chữ không bị giao diện che."
+        ],
+        "editing_guide": [
+          "Ghép đúng timeline.",
+          "Đồng bộ chữ với thao tác.",
+          "Kiểm tra âm thanh và phụ đề trước khi xuất."
+        ]
+      },
+      "plain_text": "Áo thun cổ tròn — Áo có kiểu cổ nào?\n\nMuốn nhìn rõ cổ áo trước khi chọn?\n\nThời gian — Cảnh quay — Lời thoại/voiceover — Chữ trên màn hình — Ghi chú dựng\n\n0–8s — Đặt áo lên mặt bàn, kéo phần cổ vào khung hình. — Đây là áo thun cổ tròn. — Áo thun cổ tròn — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n8–20s — Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải. Chuyển từ toàn cảnh sang cận bằng một nhịp cắt. — Chất liệu cotton, màu trắng. — Cotton · trắng — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n20–30s — Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh. — Xem thông tin áo trong shop. — Xem thông tin sản phẩm — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\nXem thông tin sản phẩm trong shop.\n\nÁo có kiểu cổ nào? Xem chi tiết sản phẩm trong shop."
+    },
+    "product_snapshot": {
+      "sku": "AT001",
+      "name": "Áo thun cổ tròn",
+      "source": "synthetic_fixture",
+      "updated_at": "2026-11-06T09:00:00+07:00",
+      "industry": "fashion",
+      "attributes": [
+        {
+          "key": "material",
+          "value": "cotton",
+          "source": "synthetic_fixture"
+        },
+        {
+          "key": "color",
+          "value": "trắng",
+          "source": "synthetic_fixture"
+        },
+        {
+          "key": "neck",
+          "value": "cổ tròn",
+          "source": "synthetic_fixture"
+        }
+      ],
+      "price": null,
+      "currency": "VND",
+      "product_url": null,
+      "offer": null,
+      "evidence": []
+    }
+  },
+  "instructions": "Điều chỉnh cảnh và CTA cho placement đích."
+}
+
