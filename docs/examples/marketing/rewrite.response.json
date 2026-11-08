@@ -3,7 +3,7 @@
   "status": "success",
   "items": [
     {
-      "client_reference": "mkt_d7dfc61c0ce59fb7a5d9eb820c709c55",
+      "client_reference": "mkt_0bff3ef54743bbf6694b15e031082f20",
       "variant": 1,
       "target": {
         "channel": "tiktok",
@@ -108,7 +108,7 @@
         },
         "plain_text": "Áo thun cổ tròn — Áo có kiểu cổ nào?\n\nMuốn nhìn rõ cổ áo trước khi chọn?\n\nThời gian — Cảnh quay — Lời thoại/voiceover — Chữ trên màn hình — Ghi chú dựng\n\n0–8s — Đặt áo lên mặt bàn, kéo phần cổ vào khung hình. —  — Áo thun cổ tròn — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n8–20s — Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải. Chuyển từ toàn cảnh sang cận bằng một nhịp cắt. —  — Cotton · trắng — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n20–30s — Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh. —  — Xem thông tin sản phẩm — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\nXem thông tin sản phẩm trong shop.\n\nÁo có kiểu cổ nào? Xem chi tiết sản phẩm trong shop."
       },
-      "source_client_reference": "mkt_e96497bad809b2b003d8927f72f7aa05",
+      "source_client_reference": "mkt_b9726982aea6f6c6ea98148d37bf7b7c",
       "source_version_reference": "example-be-version-1",
       "change_summary": "Tạo bản mới theo hướng dẫn và snapshot hiện tại; giữ nguyên tham chiếu nguồn.",
       "fact_claims": [
@@ -136,7 +136,7 @@
   ],
   "missing_fields": [],
   "metadata": {
-    "prompt_version": "marketing-2026-11-06.1",
+    "prompt_version": "marketing-2026-11-08.1",
     "knowledge_version": null,
     "sources": [],
     "model": "offline-fixture",

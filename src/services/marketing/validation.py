@@ -7,8 +7,10 @@ from __future__ import annotations
 
 import json
 import re
+import unicodedata
 from datetime import datetime, timezone
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 import regex
 
@@ -23,6 +25,16 @@ class OutputRejected(ValueError):
         super().__init__(", ".join(fields))
 
 
+def _claim_key(text: str) -> str:
+    """Compare a fact_claim with the copy ignoring case, spacing, Unicode form and edge punctuation.
+
+    The claim must still appear in the copy; capitalising a phrase that sits mid-sentence
+    in the copy (\"Túi tote…\" vs \"…túi tote…\") does not change the fact it cites.
+    """
+    text = unicodedata.normalize("NFC", text)
+    return re.sub(r"\s+", " ", text).strip().strip(".,;:!?…\"'“”()").casefold()
+
+
 def confirmed_facts(product):
     facts = {"product.sku": product.sku, "product.name": product.name}
     facts.update({f"attributes.{a.key}": a.value for a in product.attributes})
@@ -33,7 +45,14 @@ def confirmed_facts(product):
     if product.product_url:
         facts["product.product_url"] = product.product_url
     if product.offer:
-        facts.update({f"offer.{key}": str(value) for key, value in product.offer.model_dump().items() if key != "source"})
+        for key, value in product.offer.model_dump().items():
+            if key == "source":
+                continue
+            # Same instant, shown as dd/mm/yyyy HH:MM in BUSINESS_TIMEZONE: shoppers read local
+            # dates (UTC may be a day earlier), and an ISO "2026-11-15 03:05" made the model
+            # write "15/03" (hour read as month, observed live).
+            facts[f"offer.{key}"] = (f"{_local_time(value):%d/%m/%Y %H:%M} ({settings.BUSINESS_TIMEZONE})"
+                                     if isinstance(value, datetime) else str(value))
     return facts
 
 
@@ -72,7 +91,8 @@ def _numbers(text):
     # Covers spaced thousands, decimals, 199k and 1.5 triệu without equating
     # an unrelated numeric attribute with a price (money is checked separately).
     values = set()
-    for match in re.finditer(r"(?<!\w)(\d+(?:[.,]\d+)*)(?:\s*(k|nghìn|ngàn|triệu))?(?![\d.,])", text, re.I):
+    # A trailing "." / "," that ends a sentence is not part of the number ("năm 2029.").
+    for match in re.finditer(r"(?<!\w)(\d+(?:[.,]\d+)*)(?:\s*(k|nghìn|ngàn|triệu))?(?!\d|[.,]\d)", text, re.I):
         raw, suffix = match.groups()
         if suffix:
             raw = raw.replace(",", ".")
@@ -87,6 +107,107 @@ def _numbers(text):
             except Exception:
                 continue
     return values
+
+
+# Promotion wording on accent-folded text. "giam \d[\d.,]*\w*" also catches
+# multi-digit amounts such as "giam 20.000d" / "giam 20k".
+PROMO_RE = re.compile(r"\b(?:giam gia|giam (?:den )?\d[\d.,]*\w*|voucher|freeship|free ship|mien phi van chuyen|tang qua|mua \d.+tang|uu dai|khuyen mai|chi hom nay|chi con hom nay)\b")
+
+
+def _local_time(moment):
+    try:
+        return moment.astimezone(ZoneInfo(settings.BUSINESS_TIMEZONE)) if moment.tzinfo else moment
+    except Exception:
+        return moment
+
+
+def append_offer_terms(content, payload) -> bool:
+    """Guarantee exact offer terms in a caption that promotes the confirmed offer.
+
+    Models often paraphrase or drop the conditions/end date; §8 requires them exactly.
+    Only text copied verbatim from the confirmed offer is added, never anything new.
+    Returns True when something was appended.
+    """
+    offer = payload.product.offer
+    if not isinstance(content, Caption) or offer is None:
+        return False
+    if not (offer.starts_at <= datetime.now(timezone.utc) <= offer.ends_at):
+        return False
+    text = "\n".join(string_values(content.model_dump(exclude={"plain_text"})))
+    folded = fold_text(text)
+    if payload.objective != "promote_offer" and not PROMO_RE.search(folded):
+        return False
+    additions = []
+    if payload.objective == "promote_offer" and fold_text(offer.description) not in folded:
+        additions.append(f"Ưu đãi: {offer.description.strip().rstrip('.')}.")
+    if fold_text(offer.conditions) not in folded:
+        additions.append(f"Điều kiện: {offer.conditions.strip().rstrip('.')}.")
+    if not _mentions_date(text, offer.ends_at):
+        additions.append(f"Áp dụng đến hết {_local_time(offer.ends_at):%d/%m/%Y}.")
+    addition = " ".join(additions)
+    if not addition or len(content.body) + len(addition) + 2 > 4000:
+        return False
+    content.body = f"{content.body.rstrip()}\n\n{addition}"
+    return True
+
+
+_DATE_PATTERNS = (
+    # 05/01/2030, 5-1-30, 5.1.2030
+    re.compile(r"(?<![\d/.-])(\d{1,2})\s*([/.-])\s*(\d{1,2})\s*\2\s*(\d{4}|\d{2})(?!\d)"),
+    # 2030-01-05
+    re.compile(r"(?<!\d)(\d{4})-(\d{1,2})-(\d{1,2})(?!\d)"),
+    # "den het 5/1", "ngay 5/1": a bare d/m only counts after a date word (not 3/4, 24/7).
+    re.compile(r"\b(?:ngay|den|het|tu|han|truoc|toi|sau)\s+(?:ngay\s+)?(\d{1,2})\s*[/.-]\s*(\d{1,2})(?!\d|\s*[/.-]\s*\d)"),
+    # "5 thang 1 (nam 2030)"
+    re.compile(r"(?<!\d)(\d{1,2})\s+thang\s+(\d{1,2})(?:\s+nam\s+(\d{4}))?(?!\d)"),
+)
+
+
+def _dates(text):
+    """Calendar dates stated in `text` as (day, month, year|None), on accent-folded text."""
+    folded = fold_text(text)
+    found = set()
+    for index, pattern in enumerate(_DATE_PATTERNS):
+        for match in pattern.finditer(folded):
+            groups = match.groups()
+            if index == 0:
+                d, m, y = int(groups[0]), int(groups[2]), int(groups[3])
+                y = y + 2000 if y < 100 else y
+            elif index == 1:
+                y, m, d = (int(g) for g in groups)
+            elif index == 2:
+                d, m, y = int(groups[0]), int(groups[1]), None
+            else:
+                d, m, y = int(groups[0]), int(groups[1]), int(groups[2]) if groups[2] else None
+            if 1 <= d <= 31 and 1 <= m <= 12:
+                found.add((d, m, y))
+    return found
+
+
+def _unprovided_dates(text, source_text):
+    """Dates in the copy that no confirmed fact states (e.g. an invented offer period)."""
+    allowed = _dates(source_text)
+    day_months = {(d, m) for d, m, _ in allowed}
+    return [date for date in _dates(text)
+            if not (date in allowed if date[2] is not None else date[:2] in day_months)]
+
+
+def _mentions_date(text, moment):
+    """True when the copy states `moment`'s calendar day in a common Vietnamese/ISO form.
+
+    The day is taken in BUSINESS_TIMEZONE so a UTC timestamp is not shown to shoppers
+    as the previous/next day. Accepted: 05/01/2030, 5/1/2030, 5/1, 5-1-2030, 5.1.2030,
+    2030-01-05, "ngày 5 tháng 1". Another day, month or year is not accepted.
+    """
+    local = _local_time(moment)
+    d, m, y = local.day, local.month, local.year
+    folded = fold_text(text)
+    patterns = (
+        rf"(?<!\d)0?{d}\s*[/.-]\s*0?{m}(?:\s*[/.-]\s*(?:{y}|{y % 100:02d}))?(?!\d)(?![/.-]\d)",
+        rf"(?<!\d){y}-{m:02d}-{d:02d}(?!\d)",
+        rf"(?<!\d)0?{d}\s+thang\s+0?{m}(?!\d)",
+    )
+    return any(re.search(p, folded) for p in patterns)
 
 
 def common_issues(text, product, *, allowed_numbers=None):
@@ -119,8 +240,10 @@ def common_issues(text, product, *, allowed_numbers=None):
     for percentage in re.findall(r"\d+(?:[.,]\d+)?\s*%", text):
         if percentage not in source_text:
             issues.append("unprovided_percentage")
+    if _unprovided_dates(text, source_text):
+        issues.append("unprovided_date")
     # No promotion claims without an actual, currently valid offer.
-    promo = re.search(r"\b(?:giam gia|giam \d|voucher|freeship|free ship|mien phi van chuyen|tang qua|mua \d.+tang|uu dai|khuyen mai|chi hom nay|chi con hom nay)\b", folded)
+    promo = PROMO_RE.search(folded)
     if promo:
         if not product.offer:
             issues.append("unprovided_offer")
@@ -133,19 +256,27 @@ def common_issues(text, product, *, allowed_numbers=None):
                     issues.append("unprovided_offer_detail:" + term)
             if fold_text(product.offer.conditions) not in folded:
                 issues.append("missing_offer_conditions")
-            if product.offer.ends_at.date().isoformat() not in text:
+            if not _mentions_date(text, product.offer.ends_at):
                 issues.append("missing_offer_expiry")
+    # Amounts quoted from the confirmed offer (e.g. "giảm 20.000đ") are discounts, not the product price.
+    offer_amounts = _numbers(product.offer.description + " " + product.offer.conditions) if product.offer else set()
     money = list(re.finditer(r"(?<!\w)(\d+(?:[.,]\d+)*(?:\s\d{3})*)\s*(₫|đ|vnd|usd|eur|\$|k|nghìn|ngàn|triệu)(?!\w)", text, re.I))
     for m in money:
-        if product.price is None:
-            issues.append("unprovided_price")
-            continue
         amount = m.group(1).replace(" ", "")
         currency = m.group(2).lower()
         actual = _numbers(amount + (currency if currency in {"k", "nghìn", "ngàn", "triệu"} else ""))
+        expected = "VND" if currency in {"₫", "đ", "vnd", "k", "nghìn", "ngàn", "triệu"} else "USD" if currency in {"$", "usd"} else "EUR"
+        # A price word right before the amount ("giá 20.000đ") is a price claim even if the number is in the offer.
+        price_phrase = re.search(r"\b(?:gia|gia ban|gia chi|gia con|gia chi con|chi tu)\s*$", fold_text(text[max(0, m.start() - 16):m.start()]))
+        if actual and offer_amounts and actual <= offer_amounts and not price_phrase:
+            if product.currency and product.currency != expected:
+                issues.append("wrong_currency")
+            continue
+        if product.price is None:
+            issues.append("unprovided_price")
+            continue
         if actual != {product.price}:
             issues.append("wrong_price")
-        expected = "VND" if currency in {"₫", "đ", "vnd", "k", "nghìn", "ngàn", "triệu"} else "USD" if currency in {"$", "usd"} else "EUR"
         if product.currency != expected:
             issues.append("wrong_currency")
     if product.price is None and re.search(r"\b(?:gia|chi tu)\s+\d|\b(?:tram|trieu|nghin|ngan)\s+(?:dong|vnd)\b", folded):
@@ -180,6 +311,8 @@ def validate_draft(draft, payload, target):
     facts = confirmed_facts(payload.product)
     # Do not trust a model-provided plain_text or allow it to smuggle extra copy.
     content.plain_text = ""
+    if append_offer_terms(content, payload):
+        warnings.append("Đã thêm nguyên văn ưu đãi, điều kiện và hạn áp dụng từ dữ liệu shop; kiểm tra lại cách diễn đạt.")
     semantic = content.model_dump(exclude={"plain_text"})
     if isinstance(content, VideoScript):
         semantic.pop("total_duration_seconds")
@@ -193,8 +326,10 @@ def validate_draft(draft, payload, target):
                 scene.pop(key)
     prose = "\n".join(string_values(semantic))
     issues.extend(common_issues(prose, payload.product))
+    prose_key = _claim_key(prose)
     for claim in draft.fact_claims:
-        if claim.text not in prose or any(ref not in facts for ref in claim.fact_refs):
+        claim_key = _claim_key(claim.text)
+        if not claim_key or claim_key not in prose_key or any(ref not in facts for ref in claim.fact_refs):
             issues.append("invalid_fact_reference")
         elif _numbers(claim.text) - _numbers(" ".join(facts[ref] for ref in claim.fact_refs)):
             issues.append("claim_number_without_evidence")
@@ -250,6 +385,12 @@ def validate_draft(draft, payload, target):
                 issues.append("people_budget")
         if abs(cursor - duration) > .001:
             issues.append("video_total_timeline")
+        # Spec AC-02: a shootable script has spoken lines and on-screen text;
+        # only the explicit text_only mode is silent.
+        if mode != "text_only" and not any(s.dialogue or s.voiceover for s in content.scenes):
+            issues.append("missing_speech")
+        if not any(s.on_screen_text.strip() for s in content.scenes):
+            issues.append("missing_on_screen_text")
         commerce = next((c for c in payload.commerce_context if c.channel == target.channel), None)
         if content.cta.action == "attached_product" and (not commerce or commerce.product_attachment != "confirmed"):
             issues.append("unconfirmed_product_attachment")

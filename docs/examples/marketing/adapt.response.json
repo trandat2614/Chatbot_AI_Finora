@@ -3,7 +3,7 @@
   "status": "success",
   "items": [
     {
-      "client_reference": "mkt_8be3266b40b6cba4f57f95a731038d4d",
+      "client_reference": "mkt_4d79b5cca015f07511640226a27516c8",
       "variant": 1,
       "target": {
         "channel": "facebook",
@@ -108,7 +108,7 @@
         },
         "plain_text": "Áo thun cổ tròn — Áo có kiểu cổ nào?\n\nMột góc quay để xem rõ chiếc áo cổ tròn.\n\nThời gian — Cảnh quay — Lời thoại/voiceover — Chữ trên màn hình — Ghi chú dựng\n\n0–8s — Đặt áo lên mặt bàn, kéo phần cổ vào khung hình. — Đây là áo thun cổ tròn. — Áo thun cổ tròn — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n8–20s — Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải. Giữ khung hình tĩnh để xem rõ khi tắt âm. — Chất liệu cotton, màu trắng. — Cotton · trắng — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n20–30s — Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh. — Xem thông tin áo trong shop. — Xem thông tin sản phẩm — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\nXem thông tin sản phẩm trong shop.\n\nÁo có kiểu cổ nào? Xem chi tiết sản phẩm trong shop."
       },
-      "source_client_reference": "mkt_e96497bad809b2b003d8927f72f7aa05",
+      "source_client_reference": "mkt_b9726982aea6f6c6ea98148d37bf7b7c",
       "source_version_reference": "example-be-version-1",
       "change_summary": "Tạo bản mới theo hướng dẫn và snapshot hiện tại; giữ nguyên tham chiếu nguồn.",
       "fact_claims": [
@@ -130,7 +130,7 @@
       "sources": []
     },
     {
-      "client_reference": "mkt_d869820cc77910f7cce695bdbeb592f8",
+      "client_reference": "mkt_4990bc45b3706a319506688ed30b65e4",
       "variant": 1,
       "target": {
         "channel": "shopee",
@@ -235,7 +235,7 @@
         },
         "plain_text": "Áo thun cổ tròn — Áo có kiểu cổ nào?\n\nXem cổ và màu áo trước khi chọn phân loại.\n\nThời gian — Cảnh quay — Lời thoại/voiceover — Chữ trên màn hình — Ghi chú dựng\n\n0–8s — Đặt áo lên mặt bàn, kéo phần cổ vào khung hình. Đặt nhãn tên sản phẩm cùng khung hình. — Đây là áo thun cổ tròn. — Áo thun cổ tròn — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n8–20s — Hai tay mở phẳng cổ áo rồi quay cận bề mặt vải. — Chất liệu cotton, màu trắng. — Cotton · trắng — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\n20–30s — Giữ toàn bộ áo trong khung hình, đặt thẻ tên bên cạnh. — Tìm sản phẩm trong shop để xem chi tiết. — Tìm sản phẩm trong shop — Cắt gọn khoảng trống, giữ chữ cách vùng giao diện.\n\nTìm sản phẩm trong shop để xem chi tiết.\n\nÁo có kiểu cổ nào? Xem chi tiết sản phẩm trong shop."
       },
-      "source_client_reference": "mkt_e96497bad809b2b003d8927f72f7aa05",
+      "source_client_reference": "mkt_b9726982aea6f6c6ea98148d37bf7b7c",
       "source_version_reference": "example-be-version-1",
       "change_summary": "Tạo bản mới theo hướng dẫn và snapshot hiện tại; giữ nguyên tham chiếu nguồn.",
       "fact_claims": [
@@ -263,7 +263,7 @@
   ],
   "missing_fields": [],
   "metadata": {
-    "prompt_version": "marketing-2026-11-06.1",
+    "prompt_version": "marketing-2026-11-08.1",
     "knowledge_version": null,
     "sources": [],
     "model": "offline-fixture",

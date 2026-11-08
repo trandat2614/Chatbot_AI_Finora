@@ -264,7 +264,7 @@ Content-Type: application/json
     }
   ],
   "source": {
-    "client_reference": "mkt_e96497bad809b2b003d8927f72f7aa05",
+    "client_reference": "mkt_b9726982aea6f6c6ea98148d37bf7b7c",
     "version_reference": "example-be-version-1",
     "sku": "AT001",
     "target": {
@@ -455,7 +455,7 @@ Content-Type: application/json
     }
   ],
   "source": {
-    "client_reference": "mkt_e96497bad809b2b003d8927f72f7aa05",
+    "client_reference": "mkt_b9726982aea6f6c6ea98148d37bf7b7c",
     "version_reference": "example-be-version-1",
     "sku": "AT001",
     "target": {

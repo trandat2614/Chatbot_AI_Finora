@@ -2,9 +2,13 @@
 from __future__ import annotations
 
 import asyncio
+import copy
+import functools
 import hashlib
 import json
 import logging
+import random
+import re
 import time
 import uuid
 from datetime import datetime, timedelta, timezone
@@ -12,7 +16,7 @@ from datetime import datetime, timedelta, timezone
 from pydantic import ValidationError
 
 from config.settings import settings
-from core.exceptions import LLMTimeoutError
+from core.exceptions import LLMAuthenticationError, LLMClientError, LLMTimeoutError
 from src.schemas.marketing import (
     CalendarEntry, MarketingItem, MarketingMetadata, MarketingResponse,
     ItemError, ModelDraft, StrategyOutput, Target, VideoScript,
@@ -28,8 +32,59 @@ logger = logging.getLogger(__name__)
 ANGLES = ("Tình huống sử dụng", "Chi tiết sản phẩm", "Giải đáp lựa chọn")
 
 
+TRANSIENT_STATUS = {408, 429, 500, 502, 503, 504}
+
+
+def is_transient(exc):
+    """Rate limit, overload or connection drop (no status); never auth/timeout/bad request."""
+    if isinstance(exc, (LLMTimeoutError, LLMAuthenticationError)):
+        return False
+    status = getattr(exc, "status_code", None)
+    return status is None or status in TRANSIENT_STATUS
+
+
+def provider_error(exc):
+    """(code, message, retryable, fields) shown to BE; never echoes provider text."""
+    if getattr(exc, "status_code", None) == 429:
+        wait = getattr(exc, "retry_after", None)
+        if not wait:
+            hint = " Vui lòng thử lại sau."
+        elif wait >= 3600:
+            hint = f" Có thể thử lại sau khoảng {round(wait / 3600)} giờ."
+        else:
+            hint = f" Có thể thử lại sau khoảng {max(1, round(wait / 60))} phút."
+        return ("PROVIDER_RATE_LIMITED", "Đã chạm hạn mức gọi AI của nhà cung cấp." + hint, True, [])
+    return ("UPSTREAM_ERROR", "Dịch vụ AI tạm thời không khả dụng.", True, [])
+
+
 def target_only(target):
     return Target(channel=target.channel, placement=target.placement, content_type=target.content_type)
+
+
+@functools.lru_cache(maxsize=None)
+def _draft_schema_json(content_type):
+    """ModelDraft JSON schema restricted to the requested content type.
+
+    The full discriminated union lets a model answer a caption target with a video
+    script (observed live). Output is still validated against the full ModelDraft.
+    """
+    schema = copy.deepcopy(ModelDraft.model_json_schema())
+    content = schema["properties"]["content"]
+    schema["properties"]["content"] = {"$ref": content["discriminator"]["mapping"][content_type]}
+    defs = schema.pop("$defs")
+    refs = lambda node: re.findall(r'"\$ref": "#/\$defs/([^"]+)"', json.dumps(node))
+    reachable, pending = set(), refs(schema)
+    while pending:
+        name = pending.pop()
+        if name not in reachable:
+            reachable.add(name)
+            pending.extend(refs(defs[name]))
+    schema["$defs"] = {name: defs[name] for name in defs if name in reachable}
+    return json.dumps(schema)
+
+
+def draft_schema(content_type):
+    return json.loads(_draft_schema_json(content_type))
 
 
 def effective_settings(payload, target):
@@ -57,9 +112,26 @@ class MarketingService:
             return value
         message = json.dumps({"untrusted_data": safe_data(data),
             "output_json_schema": schema}, ensure_ascii=False, default=str)
-        return await asyncio.wait_for(asyncio.to_thread(
-            self.llm.generate_json, system_prompt=SYSTEM_PROMPT, user_message=message,
-            timeout=timeout, max_tokens=settings.MARKETING_MAX_TOKENS), timeout=timeout)
+        retries = max(0, min(settings.MARKETING_PROVIDER_RETRIES, 5))
+        for attempt in range(retries + 1):
+            try:
+                return await asyncio.wait_for(asyncio.to_thread(
+                    self.llm.generate_json, system_prompt=SYSTEM_PROMPT, user_message=message,
+                    timeout=timeout, max_tokens=settings.MARKETING_MAX_TOKENS), timeout=timeout)
+            except LLMClientError as exc:
+                # Bounded backoff for rate limit/overload only; never past the request deadline.
+                if not is_transient(exc) or attempt >= retries:
+                    raise
+                delay = settings.MARKETING_PROVIDER_RETRY_BASE_SECONDS * (2 ** attempt) * random.uniform(.8, 1.2)
+                # Honor the provider's own wait (e.g. daily quota: hours) instead of hammering it.
+                delay = max(delay, getattr(exc, "retry_after", None) or 0)
+                remaining = deadline - time.monotonic()
+                if remaining - delay < 1:
+                    raise
+                logger.info("Marketing provider transient error status=%s; retry %s/%s in %.1fs",
+                            getattr(exc, "status_code", None), attempt + 1, retries, delay)
+                await asyncio.sleep(delay)
+                timeout = min(deadline - time.monotonic(), max(.01, settings.MARKETING_CALL_TIMEOUT_SECONDS))
 
     async def _retrieve(self, target, context, industry, objective, tone, deadline, content_kind=None):
         try:
@@ -140,7 +212,7 @@ class MarketingService:
                         data["repair_fields"] = fields
                     try:
                         used_sources = [source_metadata(d) for d in docs]
-                        result = await self._call(data, ModelDraft.model_json_schema(), deadline)
+                        result = await self._call(data, draft_schema(target.content_type), deadline)
                         model = result.get("model")
                         if result.get("usage") is not None:
                             usage.append({"target": target.key, "variant": variant, "attempt": attempt + 1,
@@ -164,15 +236,17 @@ class MarketingService:
                         return item, None, usage, used_sources, model
                     except (ValidationError, ValueError, OutputRejected) as exc:
                         fields = exc.fields if isinstance(exc, OutputRejected) else (
-                            [".".join(map(str, e["loc"])) for e in exc.errors()] if isinstance(exc, ValidationError) else ["json"])
+                            # Malformed JSON has an empty loc; label it instead of returning "".
+                            [".".join(map(str, e["loc"])) or "json" for e in exc.errors()] if isinstance(exc, ValidationError) else ["json"])
                         # Send only structured error paths, never echo provider output as instruction.
                         error = ("OUTPUT_REJECTED", "Kết quả chưa đạt kiểm tra schema/facts/định dạng.", True, fields)
                     except (TimeoutError, LLMTimeoutError):
                         error = ("TIMEOUT", "Model quá thời gian cho phép.", True, [])
                         break
                     except Exception as exc:
-                        logger.warning("Marketing provider failed request_id=%s error=%s", request_id, type(exc).__name__)
-                        error = ("UPSTREAM_ERROR", "Dịch vụ AI tạm thời không khả dụng.", True, [])
+                        logger.warning("Marketing provider failed request_id=%s error=%s status=%s", request_id,
+                                       type(exc).__name__, getattr(exc, "status_code", None))
+                        error = provider_error(exc)
                         break
             code, message, retryable, fields = error or ("TIMEOUT", "Đã hết thời gian.", True, [])
             return None, ItemError(target=target_only(target), variant=variant, client_reference=reference,
@@ -306,8 +380,13 @@ class MarketingService:
                 data["repair_fields"] = ["strategies_schema_facts_and_no_promises"]
                 response.errors = [ItemError(code="OUTPUT_REJECTED", message="Chiến lược chưa đạt kiểm tra cấu trúc/facts.", retryable=True)]
             except Exception as exc:
-                response.errors = [ItemError(code="TIMEOUT" if isinstance(exc, (TimeoutError, LLMTimeoutError)) else "UPSTREAM_ERROR",
-                    message="Chưa thể tạo chiến lược trong thời gian cho phép.", retryable=True)]
+                logger.warning("Marketing strategy provider failed request_id=%s error=%s status=%s", request_id,
+                               type(exc).__name__, getattr(exc, "status_code", None))
+                if isinstance(exc, (TimeoutError, LLMTimeoutError)):
+                    code, message = "TIMEOUT", "Chưa thể tạo chiến lược trong thời gian cho phép."
+                else:
+                    code, message, _, _ = provider_error(exc)
+                response.errors = [ItemError(code=code, message=message, retryable=True)]
                 break
         if response.status == "success":
             response.errors = []
