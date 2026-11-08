@@ -103,6 +103,22 @@ def open_store():
                   relevance_score_fn=lambda distance: 1.0 / (1.0 + max(0.0, distance)))
 
 
+def embedding_mismatch(store):
+    """(stored_dim, current_dim) when stored vectors came from another embedding model, else None.
+
+    Content hashes alone cannot detect a provider/model switch: unchanged chunks
+    would be skipped and every later query would fail on dimensionality.
+    One probe embedding is spent only when the collection already has vectors.
+    """
+    got = store.get(limit=1, include=["embeddings"])
+    vectors = got.get("embeddings")
+    if vectors is None or len(vectors) == 0:
+        return None
+    stored = len(vectors[0])
+    current = len(store.embeddings.embed_query("finora marketing dimension probe"))
+    return None if stored == current else (stored, current)
+
+
 def scope_filter(scope, tenant_id="", shop_id=""):
     return {"$and": [{"namespace": "marketing"}, {"scope": scope},
                      {"tenant_id": tenant_id}, {"shop_id": shop_id}]}
@@ -164,8 +180,9 @@ class MarketingKnowledge:
                 # No private snapshot in the embedding query. Only bounded category/goal/tone.
                 f"{industry[:100]} {objective} {tone} {query[:200]}",
                 k=max(1, settings.MARKETING_RAG_TOP_K) * 4, filter=filters)
-        except Exception:
-            logger.warning("Marketing retrieval unavailable")
+        except Exception as exc:
+            # Type only (e.g. dimension mismatch after an embedding model switch); no query text.
+            logger.warning("Marketing retrieval unavailable error=%s", type(exc).__name__)
             return [], ["Truy xuất marketing tạm lỗi; dùng quy tắc cốt lõi và snapshot."]
         eligible = []
         for doc, score in candidates:
@@ -226,7 +243,18 @@ def main():
     if not settings.is_api_key_configured():
         parser.error("Provider credentials must be configured before embedding.")
     try:
-        report = sync_index(open_store(), docs, scope=args.scope, tenant_id=args.tenant_id, shop_id=args.shop_id)
+        store = open_store()
+        mismatch = embedding_mismatch(store)
+        if mismatch:
+            print(json.dumps({"status": "failed", "error_type": "EmbeddingModelMismatch",
+                              "stored_dimension": mismatch[0], "current_dimension": mismatch[1],
+                              "message": ("Vector marketing được tạo bằng embedding model khác cấu hình hiện tại. "
+                                          "Đổi MARKETING_VECTOR_DIR/MARKETING_COLLECTION hoặc xóa thư mục vector marketing, "
+                                          "rồi index lại public và từng thư mục private.")}, ensure_ascii=False))
+            raise SystemExit(1)
+        report = sync_index(store, docs, scope=args.scope, tenant_id=args.tenant_id, shop_id=args.shop_id)
+    except SystemExit:
+        raise
     except Exception as exc:
         print(json.dumps({"status": "failed", "error_type": type(exc).__name__,
                           "message": "Index not completed. Check provider connectivity/configuration; no collection reset performed."}))

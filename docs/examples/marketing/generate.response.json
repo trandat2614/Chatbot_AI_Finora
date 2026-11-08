@@ -3,7 +3,7 @@
   "status": "success",
   "items": [
     {
-      "client_reference": "mkt_4cc50f552a7cfc6a54d1d9cd6cd0bcdf",
+      "client_reference": "mkt_c4326e3457ec243610bab3b85ba0fa54",
       "variant": 1,
       "target": {
         "channel": "facebook",
@@ -46,7 +46,7 @@
   ],
   "missing_fields": [],
   "metadata": {
-    "prompt_version": "marketing-2026-11-06.1",
+    "prompt_version": "marketing-2026-11-08.1",
     "knowledge_version": null,
     "sources": [],
     "model": "offline-fixture",

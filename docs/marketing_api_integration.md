@@ -21,6 +21,7 @@ Migration `20261106_0004` chỉ thêm bảng TTL `marketing_idempotency` trong d
 | `MARKETING_TIMEOUT_SECONDS` | 60 giây tổng cho sinh nội dung, gồm retrieval, chờ slot, repair |
 | `MARKETING_CALL_TIMEOUT_SECONDS` | 20 giây mỗi lượt model; thời gian còn lại nhỏ hơn sẽ được dùng |
 | `MARKETING_MAX_REPAIRS` | 1; code giới hạn tối đa 2 lần sửa sau lượt đầu |
+| `MARKETING_PROVIDER_RETRIES` / `MARKETING_PROVIDER_RETRY_BASE_SECONDS` | 2 / 1.5; chỉ thử lại lỗi tạm thời của provider (429, 5xx, mất kết nối) với backoff, tôn trọng thời gian chờ provider đề xuất và không vượt `MARKETING_TIMEOUT_SECONDS`. Hết hạn mức (ví dụ quota theo ngày) trả ngay lỗi `PROVIDER_RATE_LIMITED`, `retryable=true` |
 | `MARKETING_MAX_WORKLOAD` | 15 phương án/request, 1–3 mỗi target |
 | `MARKETING_MAX_TOKENS` | 6000 cho một phương án; giữ nguyên model |
 | `MARKETING_RAG_TOP_K` / `MARKETING_RAG_MIN_SCORE` | 3 / 0.25 |
@@ -121,7 +122,7 @@ Envelope marketing được trả trực tiếp (khác lớp `success/data/meta`
 | 503 | Chưa cấu hình LLM |
 | 504 | Tất cả slot hết thời gian; một phần timeout nhưng còn item thì 200 partial_success |
 
-Auth/schema/role errors dùng envelope lỗi hiện hữu của repo; lỗi sau pipeline dùng MarketingResponse. Giới hạn tổng mặc định 60s, tối đa 3 slot model đồng thời/request; SDK không thêm retry ẩn. Chỉ repair schema/facts/style của slot lỗi, tối đa MARKETING_MAX_REPAIRS; lỗi network/timeout không tạo vòng gọi vô hạn. BE đặt HTTP/proxy timeout lớn hơn AI, ví dụ 70s, và theo dõi latency thực tế. Thread I/O có thể hoàn tất muộn sau khi bỏ chờ; không dùng kết quả muộn, không phát sinh upload/đăng bài. Không coi timeout là bằng chứng provider chưa tính phí.
+Auth/schema/role errors dùng envelope lỗi hiện hữu của repo; lỗi sau pipeline dùng MarketingResponse. Giới hạn tổng mặc định 60s, tối đa 3 slot model đồng thời/request; SDK không thêm retry ẩn. Lỗi tạm thời của provider (429/5xx/mất kết nối) được thử lại tối đa `MARKETING_PROVIDER_RETRIES` lần có backoff trong deadline; hết hạn mức provider trả `PROVIDER_RATE_LIMITED` (HTTP 502 nếu không còn item hợp lệ). Chỉ repair schema/facts/style của slot lỗi, tối đa MARKETING_MAX_REPAIRS; lỗi network/timeout không tạo vòng gọi vô hạn. BE đặt HTTP/proxy timeout lớn hơn AI, ví dụ 70s, và theo dõi latency thực tế. Thread I/O có thể hoàn tất muộn sau khi bỏ chờ; không dùng kết quả muộn, không phát sinh upload/đăng bài. Không coi timeout là bằng chứng provider chưa tính phí.
 
 POST cần Idempotency-Key lưu tại BE trước lần gọi đầu. Database unique key gồm caller issuer/auth method + user + tenant + shop + endpoint + key, lưu payload hash, operation ID, response và HTTP status. Cùng key/body trả lại item/reference và request_id gốc, metadata.idempotency_replayed=true; X-Request-ID header vẫn là HTTP attempt hiện tại. Cache có cả failed/needs_input: retry nghiệp vụ phải dùng key mới.
 

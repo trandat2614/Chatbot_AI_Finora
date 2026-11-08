@@ -2,8 +2,10 @@
 import asyncio
 import copy
 import json
+import re
 import time
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
 from pathlib import Path
 
 import jwt
@@ -94,6 +96,191 @@ def test_missing_price_allowed_missing_required_offer_needs_input():
     result, llm = run_generation(body)
     assert result.status == "needs_input" and "product.offer" in result.missing_fields
     assert not llm.calls
+
+
+def _offer_product(ends_at):
+    from src.schemas.marketing import Offer
+    product = snapshot(CASES[0]).model_copy(update={"price": Decimal("129000"), "currency": "VND"})
+    product.offer = Offer(description="Giảm 20.000đ cho đơn từ 2 túi",
+        conditions="Áp dụng khi mua từ 2 túi trong cùng đơn",
+        starts_at=datetime.now(timezone.utc) - timedelta(hours=1), ends_at=ends_at, source=product.source)
+    return product
+
+
+def test_offer_discount_amount_and_natural_expiry_dates_are_accepted():
+    from src.services.marketing.validation import common_issues
+    vn = timezone(timedelta(hours=7))
+    product = _offer_product(datetime(2030, 1, 5, 23, 59, tzinfo=vn))
+    base = "Giảm 20.000đ cho đơn từ 2 túi. Áp dụng khi mua từ 2 túi trong cùng đơn. Giá 129.000đ. "
+    for expiry in ("Hạn đến 05/01/2030.", "Hạn đến 5/1/2030.", "Hạn đến hết 5/1.", "Hạn đến 2030-01-05.",
+                   "Hạn đến ngày 5 tháng 1."):
+        assert common_issues(base + expiry, product) == [], expiry
+    # Amounts/dates that are not in the offer are still rejected.
+    assert "wrong_price" in common_issues(base.replace("20.000đ", "30.000đ") + "Hạn đến 05/01/2030.", product)
+    assert "missing_offer_expiry" in common_issues(base + "Hạn đến 06/01/2030.", product)
+    assert "missing_offer_expiry" in common_issues(base, product)
+    assert "missing_offer_conditions" in common_issues("Giảm 20.000đ cho đơn từ 2 túi. Hạn đến 05/01/2030.", product)
+    # The offer amount presented as the product price is still a wrong price.
+    assert "wrong_price" in common_issues(base + "Giá chỉ còn 20.000đ. Hạn đến 05/01/2030.", product)
+    # Day/month must match exactly: 5/10 or 15/1 is not 5/1.
+    assert "missing_offer_expiry" in common_issues(base + "Hạn đến 5/10/2030.", product)
+    assert "missing_offer_expiry" in common_issues(base + "Hạn đến 15/1/2030.", product)
+    assert "missing_offer_expiry" in common_issues(base + "Hạn đến 5/1/2031.", product)
+
+
+def test_model_receives_schema_only_for_requested_content_type():
+    from src.services.marketing.service import draft_schema
+    caption = draft_schema("caption")
+    assert caption["properties"]["content"] == {"$ref": "#/$defs/Caption"}
+    assert {"Caption", "FactClaim"} <= set(caption["$defs"]) and not {"VideoScript", "Listing", "Scene"} & set(caption["$defs"])
+    video = draft_schema("video_script")
+    assert {"VideoScript", "Scene", "FactClaim"} <= set(video["$defs"]) and "Caption" not in video["$defs"]
+    assert "Listing" in draft_schema("listing")["$defs"]
+    # Every $ref still resolves after pruning.
+    for schema in (caption, video, draft_schema("listing")):
+        for name in re.findall(r'"\$ref": "#/\$defs/([^"]+)"', json.dumps(schema)):
+            assert name in schema["$defs"]
+    # The pipeline sends the narrowed schema per target.
+    body = request_body(videos=True)
+    _, llm = run_generation(body)
+    for data, kwargs in llm.calls:
+        sent = json.loads(kwargs["user_message"])["output_json_schema"]
+        expected = {"caption": "Caption", "listing": "Listing", "video_script": "VideoScript"}[data["target"]["content_type"]]
+        assert sent["properties"]["content"] == {"$ref": f"#/$defs/{expected}"}
+
+
+def test_fact_claim_matching_ignores_case_and_edge_punctuation_only():
+    name = request_body()["product"]["name"]
+    def claims(text):
+        def transform(data, out):
+            out["fact_claims"] = [{"text": text, "fact_refs": ["product.name"]}]
+            return out
+        return transform
+    body = {**request_body(), "channels": ["facebook"]}
+    # Claim capitalised differently from the mid-sentence copy, with a trailing period: still the same fact.
+    for text in (name.upper(), name.lower() + ".", "  " + name + "  "):
+        result, _ = run_generation(body, FakeLLM(claims(text)))
+        assert result.status == "success", (text, result.model_dump())
+    # A claim that is not in the copy, an empty claim or an unknown ref is still rejected.
+    for text, refs in (("Áo được may thủ công", ["product.name"]), ("...", ["product.name"]), (name, ["product.unknown"])):
+        def transform(data, out, text=text, refs=refs):
+            out["fact_claims"] = [{"text": text, "fact_refs": refs}]
+            return out
+        result, _ = run_generation(body, FakeLLM(transform))
+        assert result.status == "failed" and "invalid_fact_reference" in result.errors[0].fields, text
+
+
+def test_valid_offer_generation_succeeds_end_to_end():
+    """promote_offer with a money discount must be able to pass the full pipeline."""
+    vn = timezone(timedelta(hours=7))
+    body = {**request_body(), "channels": ["facebook"], "objective": "promote_offer"}
+    body["product"] = {**body["product"], "price": "129000", "currency": "VND", "offer": {
+        "description": "Giảm 20.000đ cho đơn từ 2 sản phẩm", "conditions": "Áp dụng khi mua từ 2 sản phẩm trong cùng đơn",
+        "starts_at": (datetime.now(vn) - timedelta(hours=1)).isoformat(), "ends_at": "2030-01-05T23:59:00+07:00",
+        "source": body["product"]["source"]}}
+    def with_offer(data, out):
+        out["content"]["body"] += (" Giảm 20.000đ cho đơn từ 2 sản phẩm. Áp dụng khi mua từ 2 sản phẩm trong cùng đơn."
+                                   " Ưu đãi đến hết 05/01/2030.")
+        return out
+    result, _ = run_generation(body, FakeLLM(with_offer))
+    assert result.status == "success", result.model_dump()
+    # Model already stated the terms: nothing is appended.
+    assert result.items[0].content.plain_text.count("Áp dụng khi mua từ 2 sản phẩm trong cùng đơn") == 1
+
+
+def _offer_body(objective="promote_offer"):
+    vn = timezone(timedelta(hours=7))
+    body = {**request_body(), "channels": ["facebook"], "objective": objective}
+    body["product"] = {**body["product"], "price": "129000", "currency": "VND", "offer": {
+        "description": "Giảm 20.000đ cho đơn từ 2 sản phẩm", "conditions": "Áp dụng khi mua từ 2 sản phẩm trong cùng đơn",
+        "starts_at": (datetime.now(vn) - timedelta(hours=1)).isoformat(), "ends_at": "2030-01-05T23:59:00+07:00",
+        "source": body["product"]["source"]}}
+    return body
+
+
+def test_offer_terms_are_completed_verbatim_when_model_omits_them():
+    # Model mentions the discount but drops conditions and end date (observed live).
+    def partial(data, out):
+        out["content"]["body"] += " Giảm 20.000đ cho đơn từ 2 sản phẩm."
+        return out
+    result, _ = run_generation(_offer_body(), FakeLLM(partial))
+    assert result.status == "success", result.model_dump()
+    text = result.items[0].content.plain_text
+    assert "Điều kiện: Áp dụng khi mua từ 2 sản phẩm trong cùng đơn." in text and "05/01/2030" in text
+    assert any("nguyên văn ưu đãi" in w for w in result.items[0].warnings)
+    # promote_offer copy that never mentions the offer gets the confirmed offer itself, verbatim.
+    result, _ = run_generation(_offer_body(), FakeLLM())
+    assert result.status == "success", result.model_dump()
+    assert "Ưu đãi: Giảm 20.000đ cho đơn từ 2 sản phẩm." in result.items[0].content.plain_text
+    # introduce_product that does not mention the offer stays untouched.
+    result, _ = run_generation(_offer_body("introduce_product"), FakeLLM())
+    assert result.status == "success" and "Điều kiện" not in result.items[0].content.plain_text
+    # A different amount than the confirmed offer is still rejected, never "fixed".
+    def wrong(data, out):
+        out["content"]["body"] += " Giảm 50.000đ cho đơn từ 2 sản phẩm."
+        return out
+    result, _ = run_generation(_offer_body(), FakeLLM(wrong))
+    assert result.status == "failed" and "wrong_price" in result.errors[0].fields
+
+
+def test_offer_terms_with_utc_end_crossing_local_midnight():
+    # BE sends UTC; 23:00Z on 15/11 is 16/11 in Asia/Ho_Chi_Minh. The appended local date
+    # must also be an allowed number, and the model must see local dates in confirmed_facts.
+    body = _offer_body()
+    body["product"]["offer"]["ends_at"] = "2030-11-15T23:00:00Z"
+    result, llm = run_generation(body, FakeLLM())
+    assert result.status == "success", result.model_dump()
+    assert "16/11/2030" in result.items[0].content.plain_text
+    assert llm.calls[0][0]["confirmed_facts"]["offer.ends_at"] == "16/11/2030 06:00 (Asia/Ho_Chi_Minh)"
+
+
+def test_invented_dates_and_sentence_final_numbers_are_rejected():
+    from src.services.marketing.validation import common_issues
+    vn = timezone(timedelta(hours=7))
+    product = _offer_product(datetime(2030, 1, 5, 23, 59, tzinfo=vn))
+    good = "Giảm 20.000đ cho đơn từ 2 túi. Áp dụng khi mua từ 2 túi trong cùng đơn. Hạn đến 05/01/2030."
+    assert common_issues(good, product) == []
+    # Observed live: the model states a wrong period next to the right one.
+    for wrong in (" Chương trình đến hết ngày 15/03/2030.", " Áp dụng đến 15/03.", " Hạn 2030-03-15.",
+                  " Kết thúc ngày 15 tháng 3."):
+        assert "unprovided_date" in common_issues(good + wrong, product), wrong
+    # A number at the end of a sentence is still a number that needs a source.
+    plain = snapshot(CASES[0])
+    assert "unprovided_numbers" in common_issues("Mẫu mới của năm 2029.", plain)
+    # Dates that are confirmed attributes are allowed; ordinary fractions/hours stay untouched.
+    from src.schemas.marketing import Attribute
+    dated = plain.model_copy(update={"attributes": [*plain.attributes, Attribute(key="ra_mat", value="01/12/2029", source=plain.source)]})
+    assert "unprovided_date" not in common_issues("Ra mắt ngày 01/12/2029.", dated)
+
+
+def test_offer_expiry_uses_business_timezone():
+    from src.services.marketing.validation import common_issues
+    # 23:00 UTC on 15/11 is already 16/11 06:00 in Asia/Ho_Chi_Minh.
+    product = _offer_product(datetime(2030, 11, 15, 23, 0, tzinfo=timezone.utc))
+    text = "Giảm 20.000đ cho đơn từ 2 túi. Áp dụng khi mua từ 2 túi trong cùng đơn. Hạn đến "
+    assert "missing_offer_expiry" not in common_issues(text + "16/11/2030.", product)
+    assert "missing_offer_expiry" in common_issues(text + "15/11/2030.", product)
+
+
+def test_spoken_script_requires_speech_and_on_screen_text():
+    def silent(data, out):
+        if data["target"]["content_type"] == "video_script":
+            for scene in out["content"]["scenes"]:
+                scene["dialogue"] = scene["voiceover"] = None
+        return out
+    body = {**request_body(), "channels": ["tiktok"]}
+    result, _ = run_generation(body, FakeLLM(silent))
+    assert result.status == "failed" and "missing_speech" in result.errors[0].fields
+    def no_text(data, out):
+        if data["target"]["content_type"] == "video_script":
+            for scene in out["content"]["scenes"]:
+                scene["on_screen_text"] = ""
+        return out
+    result, _ = run_generation(body, FakeLLM(no_text))
+    assert result.status == "failed" and "missing_on_screen_text" in result.errors[0].fields
+    # text_only is the explicit no-voice mode and stays valid without speech.
+    result, _ = run_generation({**body, "production_mode": "text_only"}, FakeLLM(silent))
+    assert result.status == "success", result.model_dump()
 
 
 def test_valid_price_and_currency_checked_even_if_other_numbers_are_facts():
@@ -235,6 +422,90 @@ def test_prompt_injection_stays_data_and_secrets_never_in_prompt(monkeypatch):
     data, call = llm.calls[0]
     assert "BLOCKED_UNTRUSTED_INSTRUCTION" in call["user_message"]
     assert "private-" not in call["user_message"] + call["system_prompt"]
+
+
+def _provider_error(status):
+    from core.exceptions import LLMClientError
+    error = LLMClientError("Marketing provider unavailable.")
+    error.status_code = status
+    return error
+
+
+class FlakyLLM(FakeLLM):
+    """Fails the first `failures` provider calls with `status`, then behaves normally."""
+    def __init__(self, status, failures):
+        super().__init__()
+        self.status, self.failures, self.attempts = status, failures, 0
+
+    def generate_json(self, **kwargs):
+        self.attempts += 1
+        if self.attempts <= self.failures:
+            raise _provider_error(self.status)
+        return super().generate_json(**kwargs)
+
+
+@pytest.mark.parametrize("status", [429, 503, None])
+def test_transient_provider_errors_are_retried_with_bound(monkeypatch, status):
+    monkeypatch.setattr(type(settings), "MARKETING_PROVIDER_RETRY_BASE_SECONDS", .01)
+    monkeypatch.setattr(type(settings), "MARKETING_PROVIDER_RETRIES", 2)
+    llm = FlakyLLM(status, failures=2)
+    result, _ = run_generation({**request_body(), "channels": ["facebook"]}, llm)
+    assert result.status == "success" and llm.attempts == 3
+
+    llm = FlakyLLM(status, failures=10)
+    result, _ = run_generation({**request_body(), "channels": ["facebook"]}, llm)
+    assert result.status == "failed" and llm.attempts == 3  # bounded: 1 call + 2 retries
+    expected = "PROVIDER_RATE_LIMITED" if status == 429 else "UPSTREAM_ERROR"
+    assert result.errors[0].code == expected and result.errors[0].retryable
+
+
+def test_non_transient_provider_errors_are_not_retried(monkeypatch):
+    monkeypatch.setattr(type(settings), "MARKETING_PROVIDER_RETRY_BASE_SECONDS", .01)
+    llm = FlakyLLM(400, failures=10)
+    result, _ = run_generation({**request_body(), "channels": ["facebook"]}, llm)
+    assert result.status == "failed" and llm.attempts == 1
+
+
+def test_provider_retry_never_sleeps_past_deadline(monkeypatch):
+    monkeypatch.setattr(type(settings), "MARKETING_TIMEOUT_SECONDS", 1.5)
+    monkeypatch.setattr(type(settings), "MARKETING_PROVIDER_RETRY_BASE_SECONDS", 5)
+    llm = FlakyLLM(429, failures=10)
+    started = time.monotonic()
+    result, _ = run_generation({**request_body(), "channels": ["facebook"]}, llm)
+    assert result.status == "failed" and llm.attempts == 1 and time.monotonic() - started < 1.5
+
+
+def test_daily_quota_429_fails_fast_with_clear_code(monkeypatch):
+    monkeypatch.setattr(type(settings), "MARKETING_PROVIDER_RETRY_BASE_SECONDS", .01)
+    class QuotaLLM(FlakyLLM):
+        def generate_json(self, **kwargs):
+            self.attempts += 1
+            error = _provider_error(429)
+            error.retry_after = 12 * 3600  # provider says: retry in 12h
+            raise error
+    llm = QuotaLLM(429, failures=0)
+    started = time.monotonic()
+    result, _ = run_generation({**request_body(), "channels": ["facebook"]}, llm)
+    assert llm.attempts == 1 and time.monotonic() - started < 2
+    assert result.status == "failed" and result.errors[0].code == "PROVIDER_RATE_LIMITED"
+    assert "12 giờ" in result.errors[0].message
+
+
+def test_retry_after_parsed_from_header_or_gemini_message():
+    from types import SimpleNamespace
+    from core.llm_client import _retry_after_seconds
+    assert _retry_after_seconds(SimpleNamespace(response=SimpleNamespace(headers={"retry-after": "7"}), body=None)) == 7
+    body = {"error": {"message": "Quota exceeded... Please retry in 12h31m36.09s."}}
+    assert round(_retry_after_seconds(SimpleNamespace(response=None, body=body))) == 12 * 3600 + 31 * 60 + 36
+    assert _retry_after_seconds(SimpleNamespace(response=None, body={"error": "x"})) is None
+
+
+def test_strategy_retries_transient_provider_error(monkeypatch):
+    monkeypatch.setattr(type(settings), "MARKETING_PROVIDER_RETRY_BASE_SECONDS", .01)
+    llm = FlakyLLM(429, failures=1)
+    payload = StrategyRequest(shop_context="Shop nhỏ bán áo.", objective="introduce_product", products=[snapshot(CASES[0])])
+    result = asyncio.run(MarketingService(llm).strategy(payload, CONTEXT, "req_strategy"))
+    assert result.status == "success" and llm.attempts == 2
 
 
 def test_total_timeout_keeps_fast_success(monkeypatch):
@@ -522,6 +793,27 @@ def test_real_chroma_adapter_upserts_without_network(tmp_path, monkeypatch):
     assert sync_index(store, docs)["upserted"] == 0
     assert len(store.get()["ids"]) == 3
     assert sync_index(store, docs[:1])["deleted"] == 2
+
+
+def test_index_detects_embedding_model_switch(tmp_path, monkeypatch):
+    """Unchanged hashes must not hide vectors produced by a different embedding model."""
+    from langchain_chroma import Chroma
+    from langchain_core.embeddings import Embeddings
+    from src.services.marketing.knowledge import embedding_mismatch
+    class Dim(Embeddings):
+        def __init__(self, size):
+            self.size = size
+        def embed_documents(self, texts):
+            return [[float(len(t) % 7 + 1)] + [0.5] * (self.size - 1) for t in texts]
+        def embed_query(self, text):
+            return self.embed_documents([text])[0]
+    monkeypatch.setattr(type(settings), "EMBEDDING_REQUEST_INTERVAL_SECONDS", 0)
+    path = str(tmp_path / "chroma")
+    empty = Chroma(collection_name="dimension_test", persist_directory=path, embedding_function=Dim(3))
+    assert embedding_mismatch(empty) is None  # nothing stored yet: no probe needed
+    sync_index(empty, parse_directory(Path("knowledge/marketing"))[:2])
+    assert embedding_mismatch(Chroma(collection_name="dimension_test", persist_directory=path, embedding_function=Dim(3))) is None
+    assert embedding_mismatch(Chroma(collection_name="dimension_test", persist_directory=path, embedding_function=Dim(5))) == (3, 5)
 
 
 def test_openai_compatible_json_call_uses_request_scoped_limits_and_usage(monkeypatch):

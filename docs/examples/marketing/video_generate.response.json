@@ -3,7 +3,7 @@
   "status": "success",
   "items": [
     {
-      "client_reference": "mkt_e96497bad809b2b003d8927f72f7aa05",
+      "client_reference": "mkt_b9726982aea6f6c6ea98148d37bf7b7c",
       "variant": 1,
       "target": {
         "channel": "tiktok",
@@ -130,7 +130,7 @@
       "sources": []
     },
     {
-      "client_reference": "mkt_195930636deb16c28f62342db58be56f",
+      "client_reference": "mkt_97fb67f5d4d704d2d7b41194ffa632d4",
       "variant": 1,
       "target": {
         "channel": "facebook",
@@ -257,7 +257,7 @@
       "sources": []
     },
     {
-      "client_reference": "mkt_e6880287514a60be0063899289532d64",
+      "client_reference": "mkt_8233b36caede2d08043b322b0b9858bf",
       "variant": 1,
       "target": {
         "channel": "shopee",
@@ -390,7 +390,7 @@
   ],
   "missing_fields": [],
   "metadata": {
-    "prompt_version": "marketing-2026-11-06.1",
+    "prompt_version": "marketing-2026-11-08.1",
     "knowledge_version": null,
     "sources": [],
     "model": "offline-fixture",

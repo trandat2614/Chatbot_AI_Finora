@@ -63,6 +63,9 @@ class Settings:
     MARKETING_TIMEOUT_SECONDS: float = float(os.getenv("MARKETING_TIMEOUT_SECONDS", "60"))
     MARKETING_CALL_TIMEOUT_SECONDS: float = float(os.getenv("MARKETING_CALL_TIMEOUT_SECONDS", "20"))
     MARKETING_MAX_REPAIRS: int = int(os.getenv("MARKETING_MAX_REPAIRS", "1"))
+    # Retries for transient provider errors (429/5xx), bounded by MARKETING_TIMEOUT_SECONDS.
+    MARKETING_PROVIDER_RETRIES: int = int(os.getenv("MARKETING_PROVIDER_RETRIES", "2"))
+    MARKETING_PROVIDER_RETRY_BASE_SECONDS: float = float(os.getenv("MARKETING_PROVIDER_RETRY_BASE_SECONDS", "1.5"))
     MARKETING_MAX_WORKLOAD: int = int(os.getenv("MARKETING_MAX_WORKLOAD", "15"))
     MARKETING_MAX_TOKENS: int = int(os.getenv("MARKETING_MAX_TOKENS", "6000"))
     MARKETING_RAG_TOP_K: int = int(os.getenv("MARKETING_RAG_TOP_K", "3"))

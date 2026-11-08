@@ -8,6 +8,7 @@ Wraps an OpenAI-compatible Chat Completions API with:
 - Dependency injection via constructor
 """
 import logging
+import re
 from typing import Optional
 
 from openai import OpenAI, APIError, AuthenticationError, APITimeoutError
@@ -23,6 +24,23 @@ from core.prompts import FINORA_SYSTEM_PROMPT
 from src.security.privacy import sanitize_for_ai, sanitize_text
 
 logger = logging.getLogger(__name__)
+_RETRY_IN = re.compile(r"retry in\s+(?:(\d+)h)?(?:(\d+)m)?([\d.]+)s", re.IGNORECASE)
+
+
+def _retry_after_seconds(exc) -> Optional[float]:
+    """Provider-suggested wait (Retry-After header or 'retry in 12h31m5s'); None if absent."""
+    response = getattr(exc, "response", None)
+    header = response.headers.get("retry-after") if response is not None else None
+    if header:
+        try:
+            return float(header)
+        except ValueError:
+            pass
+    match = _RETRY_IN.search(str(getattr(exc, "body", None) or getattr(exc, "message", "")))
+    if not match:
+        return None
+    hours, minutes, seconds = match.groups()
+    return int(hours or 0) * 3600 + int(minutes or 0) * 60 + float(seconds)
 
 
 class LLMClient:
@@ -160,7 +178,11 @@ class LLMClient:
         except AuthenticationError as exc:
             raise LLMAuthenticationError("Marketing provider authentication failed.") from exc
         except APIError as exc:
-            raise LLMClientError("Marketing provider unavailable.") from exc
+            error = LLMClientError("Marketing provider unavailable.")
+            # Status lets the caller retry only transient failures (429/5xx/connection).
+            error.status_code = getattr(exc, "status_code", None)
+            error.retry_after = _retry_after_seconds(exc)
+            raise error from exc
 
     def generate_response(
         self,
